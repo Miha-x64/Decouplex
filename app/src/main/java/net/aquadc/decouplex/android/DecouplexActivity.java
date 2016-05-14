@@ -29,12 +29,12 @@ public abstract class DecouplexActivity extends AppCompatActivity {
                 if (!ACTION.equals(intent.getAction()))
                     return;
 
-                Bundle bun = intent.getExtras();
-                Class face = face(bun.getInt("face"));
-                String method = bun.getString("method");
-
-                Method handler = responseHandler(DecouplexActivity.this.getClass(), face, method);
                 try {
+                    Bundle bun = intent.getExtras();
+                    Class face = Class.forName(bun.getString("face"));
+                    String method = bun.getString("method");
+
+                    Method handler = responseHandler(DecouplexActivity.this.getClass(), face, method);
                     handler.invoke(DecouplexActivity.this, bun.get("result"));
                 } catch (Exception e) {
                     throw new RuntimeException(e);

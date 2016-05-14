@@ -25,12 +25,12 @@ public class DecouplexService extends IntentService {
             return;
 
         Bundle bun = intent.getExtras();
-        int faceCode = bun.getInt("face");
         int implCode = bun.getInt("impl");
         String methodName = bun.getString("method");
+        String faceName = bun.getString("face");
 
         try {
-            Class<?> face = face(faceCode);
+            Class<?> face = Class.forName(faceName);
             Object impl = impl(implCode);
 
             Class<?>[] types = unpackTypes(bun);
@@ -38,7 +38,7 @@ public class DecouplexService extends IntentService {
             Object result = method.invoke(impl, unpackParameters(bun, types.length));
 
             Bundle answer = new Bundle();
-            answer.putInt("face", faceCode);
+            answer.putString("face", faceName);
             answer.putString("method", methodName);
             put(answer, "result", result);
 

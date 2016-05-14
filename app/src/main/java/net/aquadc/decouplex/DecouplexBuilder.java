@@ -12,6 +12,9 @@ import static net.aquadc.decouplex.Decouplex.*;
  */
 public class DecouplexBuilder<FACE> {
 
+    private static int counter;
+    private static final Object lock = new Object();
+
     private Class face;
     private FACE impl;
 
@@ -34,11 +37,13 @@ public class DecouplexBuilder<FACE> {
 
     @SuppressWarnings("unchecked")
     public FACE create(Context context) {
-        interfaces.put(face.toString().hashCode(), face);
-        implementations.put(impl.hashCode(), impl);
-        return (FACE) Proxy.newProxyInstance(
-                face.getClassLoader(), new Class[]{face},
-                new DecouplexRequestHandler<>(context.getApplicationContext(), face, impl));
+        synchronized (lock) {
+            counter++;
+            implementations.put(counter, impl);
+            return (FACE) Proxy.newProxyInstance(
+                    face.getClassLoader(), new Class[]{face},
+                    new DecouplexRequestHandler<>(context.getApplicationContext(), face, /*impl, */counter));
+        }
     }
 
 }

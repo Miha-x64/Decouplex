@@ -101,13 +101,7 @@ public abstract class Decouplex {
         primitives = Collections.unmodifiableMap(m);
     }
 
-
-    static final Map<Integer, Class> interfaces = new HashMap<>();
     static final Map<Integer, Object> implementations = new HashMap<>();
-
-    public static Class face(int hash) {
-        return interfaces.get(hash);
-    }
 
     public static Method responseHandler(Class target, Class face, String methodName) {
         Method[] methods = target.getMethods();
@@ -124,8 +118,8 @@ public abstract class Decouplex {
         throw new RuntimeException("no handler for " + face.getSimpleName() + "::" + methodName);
     }
 
-    public static Object impl(int hashCode) {
-        return implementations.get(hashCode);
+    public static Object impl(int code) {
+        return implementations.get(code);
     }
 
     public static void packParameters(Bundle bun, Object[] args) {
@@ -164,6 +158,7 @@ public abstract class Decouplex {
         return types.toArray(classes);
     }
 
+    @SuppressWarnings("unchecked")
     public static void put(Bundle bun, String key, Object value) {
         if (value == null)
             return;

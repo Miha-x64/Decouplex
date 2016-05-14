@@ -18,12 +18,14 @@ import static net.aquadc.decouplex.Decouplex.*;
 public class DecouplexRequestHandler<FACE> implements InvocationHandler {
 
     private final Class<FACE> face;
-    private final FACE impl;
+//    private final FACE impl;
+    private final int implCode;
     private final Context context;
 
-    DecouplexRequestHandler(Context context, Class<FACE> face, FACE impl) {
+    DecouplexRequestHandler(Context context, Class<FACE> face, /*FACE impl, */int implCode) {
         this.face = face;
-        this.impl = impl;
+//        this.impl = impl;
+        this.implCode = implCode;
         this.context = context;
     }
 
@@ -31,8 +33,8 @@ public class DecouplexRequestHandler<FACE> implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
         Bundle data = new Bundle();
-        data.putInt("face", face.toString().hashCode());
-        data.putInt("impl", impl.hashCode());
+        data.putString("face", face.getCanonicalName());
+        data.putInt("impl", implCode);
         data.putString("method", method.getName());
         packParameters(data, args);
         packTypes(data, method.getParameterTypes());
