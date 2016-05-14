@@ -4,6 +4,9 @@ import android.app.IntentService;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+
+import net.aquadc.decouplex.adapter.ResultAdapter;
 
 import java.lang.reflect.Method;
 
@@ -25,22 +28,30 @@ public class DecouplexService extends IntentService {
             return;
 
         Bundle bun = intent.getExtras();
-        int implCode = bun.getInt("impl");
-        String methodName = bun.getString("method");
         String faceName = bun.getString("face");
+        String methodName = bun.getString("method");
+        int implCode = bun.getInt("impl");
+
+        Object impl = impl(implCode);
+        ResultAdapter resultAdapter = resultAdapter(bun.getInt("resultAdapter"));
 
         try {
             Class<?> face = Class.forName(faceName);
-            Object impl = impl(implCode);
 
             Class<?>[] types = unpackTypes(bun);
             Method method = face.getDeclaredMethod(methodName, types);
-            Object result = method.invoke(impl, unpackParameters(bun, types.length));
+            Object[] params = unpackParameters(bun, types.length);
+            Object result = method.invoke(impl, params);
 
             Bundle answer = new Bundle();
             answer.putString("face", faceName);
             answer.putString("method", methodName);
-            put(answer, "result", result);
+
+            if (resultAdapter == null) {
+                put(answer, "result", result);
+            } else {
+                resultAdapter.processResult(answer, face, method, params, result);
+            }
 
             Intent resp = new Intent(ACTION);
             resp.putExtras(answer);
@@ -48,7 +59,9 @@ public class DecouplexService extends IntentService {
                     .getInstance(this)
                     .sendBroadcast(resp);
         } catch (Exception e) {
+            Log.e("Decouplex service", "exception while executing " + methodName + " on " + impl, e);
             throw new RuntimeException(e);
+            // TODO: broadcasting exceptions
         }
     }
 }

@@ -1,9 +1,15 @@
 package net.aquadc.decouplex;
 
+import android.os.Build;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.os.Parcelable;
 import android.util.Log;
+import android.util.Size;
+import android.util.SizeF;
 
+import net.aquadc.decouplex.adapter.Packer;
+import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.annotation.OnResult;
 
 import java.io.Serializable;
@@ -19,8 +25,15 @@ import java.util.Map;
  */
 public abstract class Decouplex {
 
+    /**
+     * Action to use in Intents
+     */
     public static final String ACTION = "DECOUPLEX";
 
+    /**
+     * lambdas used to pack objects of final types
+     * (no primitives here, because {@see java.lang.reflect.Proxy} wraps them)
+     */
     private static final Map<Class, Packer> immediatePackers;
     static {
         HashMap<Class, Packer> m = new HashMap<>();
@@ -45,14 +58,20 @@ public abstract class Decouplex {
 
         m.put(String.class,         (b, k, v) -> b.putString(k, (String) v));
         m.put(Bundle.class,         (b, k, v) -> b.putBundle(k, (Bundle) v));
-//      API 21
-//      tmp.put(Size.class,       (b, k, v) -> b.putSize(k, (Size) v));
-//      tmp.put(SizeF.class,      (b, k, v) -> b.putSizeF(k, (SizeF) v));
+
+        if (Build.VERSION.SDK_INT >= 21) {
+            m.put(Size.class, (b, k, v) -> b.putSize(k, (Size) v));
+            m.put(SizeF.class, (b, k, v) -> b.putSizeF(k, (SizeF) v));
+        }
 
         m.put(String[].class,       (b, k, v) -> b.putStringArray(k, (String[]) v));
 
         immediatePackers = Collections.unmodifiableMap(m);
     }
+
+    /**
+     * lambdas used to pack objects of non-final types
+     */
     public static final Map<Class, Packer> mediatedPackers;
     static {
         HashMap<Class, Packer> m = new HashMap<>();
@@ -63,8 +82,9 @@ public abstract class Decouplex {
         m.put(Parcelable.class,     (b, k, v) -> b.putParcelable(k,         (Parcelable) v));
         m.put(Parcelable[].class,   (b, k, v) -> b.putParcelableArray(k,    (Parcelable[]) v));
 
-//      API 18
-//      m.put(IBinder.class,        (b, k, v) -> b.putBinder(k, (IBinder) v));
+        if (Build.VERSION.SDK_INT >= 18) {
+            m.put(IBinder.class, (b, k, v) -> b.putBinder(k, (IBinder) v));
+        }
 
         mediatedPackers = Collections.unmodifiableMap(m);
     }
@@ -85,6 +105,9 @@ public abstract class Decouplex {
         wrappers = Collections.unmodifiableMap(m);
     }*/
 
+    /**
+     * Class.forName ignores primitives, it is a workaround
+     */
     public static final Map<String, Class> primitives;
     static {
         HashMap<String, Class> m = new HashMap<>();
@@ -101,8 +124,31 @@ public abstract class Decouplex {
         primitives = Collections.unmodifiableMap(m);
     }
 
+    /**
+     * Implementations of interfaces
+     */
     static final Map<Integer, Object> implementations = new HashMap<>();
 
+    public static Object impl(int code) {
+        return implementations.get(code);
+    }
+
+    /**
+     * ResultAdapters
+     */
+    static final Map<Integer, ResultAdapter> resultAdapters = new HashMap<>();
+
+    public static ResultAdapter resultAdapter(int code) {
+        return resultAdapters.get(code);
+    }
+
+    /**
+     * find handler for the method result
+     * @param target class where lookup will be produced
+     * @param face interface through which the action was performed
+     * @param methodName method name from the given interface
+     * @return method to handle response
+     */
     public static Method responseHandler(Class target, Class face, String methodName) {
         Method[] methods = target.getMethods();
         for (Method method : methods) {
@@ -115,19 +161,27 @@ public abstract class Decouplex {
                 continue;
             return method;
         }
-        throw new RuntimeException("no handler for " + face.getSimpleName() + "::" + methodName);
+        throw new RuntimeException("handler for " + face.getSimpleName() + "::" + methodName +
+                " not found in " + target.getSimpleName());
     }
 
-    public static Object impl(int code) {
-        return implementations.get(code);
-    }
-
+    /**
+     * Pack parameters, passed to the method, to the bundle
+     * @param bun bundle where arguments will be put
+     * @param args arguments
+     */
     public static void packParameters(Bundle bun, Object[] args) {
         for (int i = 0; i < args.length; i++) {
             put(bun, Integer.toString(i), args[i]);
         }
     }
 
+    /**
+     * Unpack parameters
+     * @param bun bundle where the parameters stored
+     * @param count number of parameters
+     * @return parameters
+     */
     public static Object[] unpackParameters(Bundle bun, int count) {
         Object[] params = new Object[count];
         for (int i = 0; i < count; i++) {
@@ -136,6 +190,11 @@ public abstract class Decouplex {
         return params;
     }
 
+    /**
+     * Store parameter types to the bundle
+     * @param bun bundle to store types
+     * @param types types
+     */
     public static void packTypes(Bundle bun, Class<?>[] types) {
         for (int i = 0; i < types.length; i++) {
             Class<?> type = types[i];
@@ -146,6 +205,11 @@ public abstract class Decouplex {
         }
     }
 
+    /**
+     * Obtain parameter types from the bundle
+     * @param bun bundle
+     * @return types
+     */
     public static Class<?>[] unpackTypes(Bundle bun) {
         ArrayList<Class> types = new ArrayList<>();
         String type;
@@ -158,17 +222,25 @@ public abstract class Decouplex {
         return types.toArray(classes);
     }
 
+    /**
+     * Put an object to a bundle
+     * @param bun bundle
+     * @param key key
+     * @param value object
+     */
     @SuppressWarnings("unchecked")
     public static void put(Bundle bun, String key, Object value) {
         if (value == null)
             return;
 
+        // final classes that can be just found in the set
         Packer p = immediatePackers.get(value.getClass());
         if (p != null) {
             p.put(bun, key, value);
             return;
         }
 
+        // interfaces or non-final classes that must be checked with instanceof
         for (Class type : mediatedPackers.keySet()) {
             if (type.isInstance(value)) {
                 mediatedPackers.get(type).put(bun, key, value);
@@ -176,12 +248,14 @@ public abstract class Decouplex {
             }
         }
 
+        // the last, the worst try
         if (value instanceof Serializable) {
             bun.putSerializable(key, (Serializable) value);
             Log.e("Decouplex", "warn: writing Serializable (" + value.getClass() + ") to bundle");
             return;
         }
 
+        // arrgh, generics
         // FIXME: ArrayList<? ex String/CharSequence/Integer/Parcelable>
         // FIXME: SparseArray<? ex Parcelable>
 

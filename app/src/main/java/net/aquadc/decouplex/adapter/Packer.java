@@ -1,4 +1,4 @@
-package net.aquadc.decouplex;
+package net.aquadc.decouplex.adapter;
 
 import android.os.Bundle;
 
