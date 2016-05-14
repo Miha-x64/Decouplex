@@ -9,11 +9,10 @@ import android.widget.Toast;
 import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.R;
 import net.aquadc.decouplex.android.DecouplexActivity;
+import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
 import java.util.List;
-import java.util.Locale;
-import java.util.Random;
 
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -21,11 +20,6 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class SampleActivity extends DecouplexActivity {
-
-    private SampleService sampleService =
-            new DecouplexBuilder<>(SampleService.class)
-                    .impl(new SampleServiceImpl())
-                    .create(DecouplexTestApp.getInstance());
 
     private GitHubService gitHubRetrofitService =
             new Retrofit.Builder()
@@ -52,17 +46,8 @@ public class SampleActivity extends DecouplexActivity {
         result = (TextView) findViewById(R.id.result);
     }
 
-    public void sqr(View v) {
-        sampleService.getSquare(new Random().nextInt());
-    }
-
     public void gitHub(View v) {
         gitHubService.listRepos("Miha-x64");
-    }
-
-    @OnResult(face = SampleService.class, method = "getSquare")
-    protected void onSquareGot(int i) {
-        result.setText(String.format(Locale.getDefault(), "result: %s", i));
     }
 
     @OnResult(face = GitHubService.class, method = "listRepos")
@@ -73,5 +58,11 @@ public class SampleActivity extends DecouplexActivity {
         }
         result.setText(Html.fromHtml(sb.toString()));
         Toast.makeText(this, "resp code: " + code, Toast.LENGTH_SHORT).show();
+    }
+
+    @OnError(face = GitHubService.class, method = "listRepos")
+    protected void onError(Exception e, int code, String message) {
+        Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, code + ": " + message, Toast.LENGTH_SHORT).show();
     }
 }

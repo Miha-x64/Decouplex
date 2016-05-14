@@ -8,9 +8,12 @@ import android.util.Log;
 import android.util.Size;
 import android.util.SizeF;
 
+import net.aquadc.decouplex.adapter.ErrorAdapter;
+import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.Packer;
-import net.aquadc.decouplex.adapter.PostProcessor;
+import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
+import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
 import java.io.Serializable;
@@ -32,7 +35,9 @@ public abstract class Decouplex {
     /**
      * Action to use in Intents
      */
-    public static final String ACTION = "DECOUPLEX";
+    public static final String ACTION_EXEC = "DECOUPLEX_EXEC";
+    public static final String ACTION_RESULT = "DECOUPLEX_RESULT";
+    public static final String ACTION_ERR = "DECOUPLEX_ERR";
 
     /**
      * lambdas used to pack objects of final types
@@ -138,14 +143,13 @@ public abstract class Decouplex {
     }
 
     /**
-     * Post-processors
+     * Result post-processors
      */
-    static final Map<Integer, PostProcessor> postProcessors = new HashMap<>();
+    static final Map<Integer, ResultProcessor> resultProcessors = new HashMap<>();
 
-    public static PostProcessor postProcessor(int code) {
-        return postProcessors.get(code);
+    public static ResultProcessor resultProcessor(int code) {
+        return resultProcessors.get(code);
     }
-
     /**
      * Result adapters
      */
@@ -156,6 +160,23 @@ public abstract class Decouplex {
     }
 
     /**
+     * Error post-processors
+     */
+    static final Map<Integer, ErrorProcessor> errorProcessors = new HashMap<>();
+
+    public static ErrorProcessor errorProcessor(int code) {
+        return errorProcessors.get(code);
+    }
+    /**
+     * Error adapters
+     */
+    static final Map<Integer, ErrorAdapter> errorAdapters = new HashMap<>();
+
+    public static ErrorAdapter errorAdapter(int code) {
+        return errorAdapters.get(code);
+    }
+
+    /**
      * find handler for the method result
      * @param target class where lookup will be produced
      * @param face interface through which the action was performed
@@ -163,6 +184,7 @@ public abstract class Decouplex {
      * @return method to handle response
      */
     public static Method responseHandler(Class target, Class face, String methodName) {
+        // TODO: wildcard
         Method[] methods = target.getDeclaredMethods();
         for (Method method : methods) {
             OnResult onResult = method.getAnnotation(OnResult.class);
@@ -175,6 +197,30 @@ public abstract class Decouplex {
             return method;
         }
         throw new RuntimeException("handler for " + face.getSimpleName() + "::" + methodName +
+                " not found in " + target.getSimpleName());
+    }
+
+    /**
+     * find handler for the method exception
+     * @param target class where lookup will be produced
+     * @param face interface through which the action was performed
+     * @param methodName method name from the given interface
+     * @return method to handle response
+     */
+    public static Method errorHandler(Class target, Class face, String methodName) {
+        // TODO: wildcard
+        Method[] methods = target.getDeclaredMethods();
+        for (Method method : methods) {
+            OnError onResult = method.getAnnotation(OnError.class);
+            if (onResult == null)
+                continue;
+            if (onResult.face() != face)
+                continue;
+            if (!onResult.method().equals(methodName))
+                continue;
+            return method;
+        }
+        throw new RuntimeException("error handler for " + face.getSimpleName() + "::" + methodName +
                 " not found in " + target.getSimpleName());
     }
 
@@ -285,7 +331,9 @@ public abstract class Decouplex {
         // the last, the worst try
         if (value instanceof Serializable) {
             bun.putSerializable(key, (Serializable) value);
-            Log.e("Decouplex", "warn: writing Serializable (" + value.getClass() + ") to bundle");
+            if (!(value instanceof Throwable)) { // serializing Exceptions is ok
+                Log.e("Decouplex", "warn: writing Serializable (" + value.getClass() + ") to bundle");
+            }
             return;
         }
 

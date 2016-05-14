@@ -6,7 +6,8 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import net.aquadc.decouplex.adapter.PostProcessor;
+import net.aquadc.decouplex.adapter.ErrorProcessor;
+import net.aquadc.decouplex.adapter.ResultProcessor;
 
 import java.lang.reflect.Method;
 
@@ -24,45 +25,65 @@ public class DecouplexService extends IntentService {
 
     @Override
     protected void onHandleIntent(Intent intent) {
-        if (!ACTION.equals(intent.getAction()))
+        if (!ACTION_EXEC.equals(intent.getAction()))
             return;
 
-        Bundle bun = intent.getExtras();
-        String faceName = bun.getString("face");
-        String methodName = bun.getString("method");
-        int implCode = bun.getInt("impl");
+        Bundle req = intent.getExtras();
+        String faceName = req.getString("face");
+        String methodName = req.getString("method");
+        int implCode = req.getInt("impl");
 
         Object impl = impl(implCode);
-        PostProcessor postProcessor = postProcessor(bun.getInt("postProcessor"));
+        ResultProcessor resultProcessor = resultProcessor(req.getInt("resultProcessor"));
+
+        Class<?> face;
+        Class<?>[] types;
+        Method method;
+        Object[] params;
+        try {
+            face = Class.forName(faceName);
+
+            types = unpackTypes(req);
+            method = face.getDeclaredMethod(methodName, types);
+            params = unpackParameters(req, types.length);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
 
         try {
-            Class<?> face = Class.forName(faceName);
-
-            Class<?>[] types = unpackTypes(bun);
-            Method method = face.getDeclaredMethod(methodName, types);
-            Object[] params = unpackParameters(bun, types.length);
             Object result = method.invoke(impl, params);
 
-            Bundle answer = new Bundle();
-            answer.putString("face", faceName);
-            answer.putString("method", methodName);
-            answer.putInt("resultAdapter", bun.getInt("resultAdapter"));
+            Bundle resp = new Bundle();
+            resp.putString("face", faceName);
+            resp.putString("method", methodName);
+            resp.putInt("resultAdapter", req.getInt("resultAdapter"));
 
-            if (postProcessor == null) {
-                put(answer, "result", method.getReturnType(), result);
+            if (resultProcessor == null) {
+                put(resp, "result", method.getReturnType(), result);
             } else {
-                postProcessor.processAndPutResult(answer, face, method, params, result);
+                resultProcessor.process(resp, face, method, params, result);
             }
 
-            Intent resp = new Intent(ACTION);
-            resp.putExtras(answer);
+            Intent res = new Intent(ACTION_RESULT);
+            res.putExtras(resp);
             LocalBroadcastManager
                     .getInstance(this)
-                    .sendBroadcast(resp);
+                    .sendBroadcast(res);
         } catch (Exception e) {
-            Log.e("Decouplex service", "exception while executing " + methodName + " on " + impl, e);
-            throw new RuntimeException(e);
-            // TODO: broadcasting exceptions
+            Bundle resp = new Bundle();
+            resp.putBundle("request", req);
+            put(resp, "exception", null, e);
+
+            ErrorProcessor processor = errorProcessor(req.getInt("errorProcessor"));
+            if (processor != null) {
+                processor.process(resp, face, method, params, e);
+            }
+
+            Intent err = new Intent(ACTION_ERR);
+            err.putExtras(resp);
+            LocalBroadcastManager
+                    .getInstance(this)
+                    .sendBroadcast(err);
         }
     }
 }

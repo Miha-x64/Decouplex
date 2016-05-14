@@ -15,17 +15,21 @@ import static net.aquadc.decouplex.Decouplex.put;
  * Created by miha on 14.05.16.
  *
  */
-public class Retrofit2PostProcessor implements PostProcessor {
+public class Retrofit2ResultProcessor implements ResultProcessor {
 
     @Override
-    public void processAndPutResult(Bundle bun,
-                                      Class face, Method method,
-                                      Object[] args, Object result) throws Exception {
+    public void process(Bundle addFieldsHere,
+                        Class face, Method method,
+                        Object[] args, Object result) throws Exception {
         Response resp = ((Call<?>) result).execute();
 
-        Type[] types = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments();
-        put(bun, "body", types[0], resp.body());
+        if (!resp.isSuccessful()) {
+            throw new HttpException(resp.code(), resp.message());
+        }
 
-        put(bun, "code", null, resp.code());
+        Type[] types = ((ParameterizedType) method.getGenericReturnType()).getActualTypeArguments();
+        put(addFieldsHere, "body", types[0], resp.body());
+
+        addFieldsHere.putInt("code", resp.code());
     }
 }

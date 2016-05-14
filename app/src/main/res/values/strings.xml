@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Decouplex</string>
+    <string name="press_me">List my GitHub repositories</string>
 </resources>

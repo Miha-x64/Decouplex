@@ -11,27 +11,11 @@
     android:paddingTop="@dimen/activity_vertical_margin"
     tools:context=".example.SampleActivity">
 
-    <LinearLayout
-        android:layout_width="match_parent"
+    <Button
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:baselineAligned="false"
-        android:orientation="horizontal">
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Calculate sqr(random)"
-            android:layout_weight="1"
-            android:onClick="sqr"/>
-
-        <Button
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="List my repos"
-            android:layout_weight="1"
-            android:onClick="gitHub"/>
-
-    </LinearLayout>
+        android:text="@string/press_me"
+        android:onClick="gitHub"/>
 
     <TextView
         android:id="@+id/result"
