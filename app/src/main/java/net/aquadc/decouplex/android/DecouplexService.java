@@ -32,14 +32,15 @@ public class DecouplexService extends IntentService {
         try {
             Class<?> face = face(faceCode);
             Object impl = impl(implCode);
-            Method method = face.getDeclaredMethod(methodName);
 
-            Object result = method.invoke(impl);
+            Class<?>[] types = unpackTypes(bun);
+            Method method = face.getDeclaredMethod(methodName, types);
+            Object result = method.invoke(impl, unpackParameters(bun, types.length));
 
             Bundle answer = new Bundle();
             answer.putInt("face", faceCode);
             answer.putString("method", methodName);
-            answer.putString("result", result.toString()); // fixme
+            put(answer, "result", result);
 
             Intent resp = new Intent(ACTION);
             resp.putExtras(answer);

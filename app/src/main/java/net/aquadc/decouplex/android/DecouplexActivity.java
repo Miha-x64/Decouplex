@@ -35,7 +35,7 @@ public abstract class DecouplexActivity extends AppCompatActivity {
 
                 Method handler = responseHandler(DecouplexActivity.this.getClass(), face, method);
                 try {
-                    handler.invoke(DecouplexActivity.this, bun.getString("result"));
+                    handler.invoke(DecouplexActivity.this, bun.get("result"));
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

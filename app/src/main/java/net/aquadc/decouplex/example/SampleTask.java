@@ -5,5 +5,5 @@ package net.aquadc.decouplex.example;
  *
  */
 public interface SampleTask {
-    int getRandom();
+    int getSquare(int n);
 }

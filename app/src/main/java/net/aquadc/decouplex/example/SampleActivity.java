@@ -31,11 +31,11 @@ public class SampleActivity extends DecouplexActivity {
     }
 
     void test(View v) {
-        task.getRandom();
+        task.getSquare(5);
     }
 
-    @OnResult(face = SampleTask.class, method = "getRandom")
-    protected void onResult(String i) {
+    @OnResult(face = SampleTask.class, method = "getSquare")
+    protected void onResult(int i) {
         result.setText(String.format(Locale.getDefault(), "result: %s", i));
     }
 }

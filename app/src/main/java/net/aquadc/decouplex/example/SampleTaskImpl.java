@@ -1,7 +1,5 @@
 package net.aquadc.decouplex.example;
 
-import java.util.Random;
-
 /**
  * Created by miha on 14.05.16.
  *
@@ -9,7 +7,7 @@ import java.util.Random;
 public class SampleTaskImpl implements SampleTask {
 
     @Override
-    public int getRandom() {
-        return new Random(System.nanoTime()).nextInt();
+    public int getSquare(int n) {
+        return n*n;
     }
 }
