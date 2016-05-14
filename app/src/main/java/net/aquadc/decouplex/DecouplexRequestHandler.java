@@ -1,11 +1,9 @@
 package net.aquadc.decouplex;
 
-import android.app.Application;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 
-import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.android.DecouplexService;
 
 import java.lang.reflect.InvocationHandler;
@@ -24,16 +22,18 @@ public class DecouplexRequestHandler<FACE> implements InvocationHandler {
     private final Class<FACE> face;
     private final int implCode;
 
+    private int postProcessorCode;
     private int resultAdapterCode;
 
     DecouplexRequestHandler(Context context,
                             Class<FACE> face, int implCode,
-                            int resultAdapterCode) {
+                            int postProcessorCode, int resultAdapterCode) {
         this.context = context;
 
         this.face = face;
         this.implCode = implCode;
 
+        this.postProcessorCode = postProcessorCode;
         this.resultAdapterCode = resultAdapterCode;
     }
 
@@ -44,11 +44,16 @@ public class DecouplexRequestHandler<FACE> implements InvocationHandler {
         data.putString("face", face.getCanonicalName());
         data.putInt("impl", implCode);
         data.putString("method", method.getName());
+
+        if (postProcessorCode != 0)
+            data.putInt("postProcessor", postProcessorCode);
+
         if (resultAdapterCode != 0)
             data.putInt("resultAdapter", resultAdapterCode);
 
-        packTypes(data, method.getParameterTypes());
-        packParameters(data, args);
+        Class[] types = method.getParameterTypes();
+        packTypes(data, types);
+        packParameters(data, types, args);
 
         Intent service = new Intent(context, DecouplexService.class);
         service.setAction(ACTION);

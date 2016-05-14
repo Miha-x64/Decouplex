@@ -9,15 +9,19 @@ import android.util.Size;
 import android.util.SizeF;
 
 import net.aquadc.decouplex.adapter.Packer;
+import net.aquadc.decouplex.adapter.PostProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.annotation.OnResult;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Created by miha on 14.05.16.
@@ -89,11 +93,11 @@ public abstract class Decouplex {
         mediatedPackers = Collections.unmodifiableMap(m);
     }
 
-    /*public static final Map<Class, Class> wrappers;
+    public static final Map<Class, Class> wrappers;
     static {
         HashMap<Class, Class> m = new HashMap<>();
 
-        m.put(boolean.class, Boolean.class);
+        m.put(boolean.class,Boolean.class);
         m.put(byte.class,   Byte.class);
         m.put(short.class,  Short.class);
         m.put(char.class,   Character.class);
@@ -103,7 +107,7 @@ public abstract class Decouplex {
         m.put(double.class, Double.class);
 
         wrappers = Collections.unmodifiableMap(m);
-    }*/
+    }
 
     /**
      * Class.forName ignores primitives, it is a workaround
@@ -134,7 +138,16 @@ public abstract class Decouplex {
     }
 
     /**
-     * ResultAdapters
+     * Post-processors
+     */
+    static final Map<Integer, PostProcessor> postProcessors = new HashMap<>();
+
+    public static PostProcessor postProcessor(int code) {
+        return postProcessors.get(code);
+    }
+
+    /**
+     * Result adapters
      */
     static final Map<Integer, ResultAdapter> resultAdapters = new HashMap<>();
 
@@ -150,7 +163,7 @@ public abstract class Decouplex {
      * @return method to handle response
      */
     public static Method responseHandler(Class target, Class face, String methodName) {
-        Method[] methods = target.getMethods();
+        Method[] methods = target.getDeclaredMethods();
         for (Method method : methods) {
             OnResult onResult = method.getAnnotation(OnResult.class);
             if (onResult == null)
@@ -170,9 +183,9 @@ public abstract class Decouplex {
      * @param bun bundle where arguments will be put
      * @param args arguments
      */
-    public static void packParameters(Bundle bun, Object[] args) {
+    public static void packParameters(Bundle bun, Class[] types, Object[] args) {
         for (int i = 0; i < args.length; i++) {
-            put(bun, Integer.toString(i), args[i]);
+            put(bun, Integer.toString(i), types[i], args[i]);
         }
     }
 
@@ -229,7 +242,7 @@ public abstract class Decouplex {
      * @param value object
      */
     @SuppressWarnings("unchecked")
-    public static void put(Bundle bun, String key, Object value) {
+    public static void put(Bundle bun, String key, Type type, Object value) {
         if (value == null)
             return;
 
@@ -241,12 +254,33 @@ public abstract class Decouplex {
         }
 
         // interfaces or non-final classes that must be checked with instanceof
-        for (Class type : mediatedPackers.keySet()) {
-            if (type.isInstance(value)) {
-                mediatedPackers.get(type).put(bun, key, value);
+        for (Class medType : mediatedPackers.keySet()) {
+            if (medType.isInstance(value)) {
+                mediatedPackers.get(medType).put(bun, key, value);
                 return;
             }
         }
+
+        // ArrayList<Something>
+
+        if (ArrayList.class.isInstance(value)) {
+            Class E = (Class) ((ParameterizedType) type).getActualTypeArguments()[0];
+            if (E == Integer.class) {
+                bun.putIntegerArrayList(key, (ArrayList<Integer>) value);
+                return;
+            } else if (E == String.class) {
+                bun.putStringArrayList(key, (ArrayList<String>) value);
+                return;
+            } else if (CharSequence.class.isAssignableFrom(E)) {
+                bun.putCharSequenceArrayList(key, (ArrayList<CharSequence>) value);
+                return;
+            } else if (Parcelable.class.isAssignableFrom(E)) {
+                bun.putParcelableArrayList(key, (ArrayList<Parcelable>) value);
+                return;
+            }
+        }
+
+        // TODO: SparseArray<Parcelable>
 
         // the last, the worst try
         if (value instanceof Serializable) {
@@ -254,10 +288,6 @@ public abstract class Decouplex {
             Log.e("Decouplex", "warn: writing Serializable (" + value.getClass() + ") to bundle");
             return;
         }
-
-        // arrgh, generics
-        // FIXME: ArrayList<? ex String/CharSequence/Integer/Parcelable>
-        // FIXME: SparseArray<? ex Parcelable>
 
         throw new IllegalArgumentException("unknown type: " + value.getClass());
     }
@@ -271,6 +301,26 @@ public abstract class Decouplex {
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public static Object[] arguments(Class[] types, Set<Object> args) {
+        Object[] params = new Object[types.length];
+        for (int i = 0; i < types.length; i++) {
+            Class type = types[i];
+            Object arg = null;
+            for (Object o : args) {
+                if (type.isInstance(o) ||
+                        (type.isPrimitive() && wrappers.get(type).isInstance(o))) {
+                    arg = o;
+                    break;
+                }
+            }
+            if (arg == null) {
+                throw new IllegalArgumentException("can't find applicable argument of type " + type);
+            }
+            params[i] = arg;
+        }
+        return params;
     }
 
 }

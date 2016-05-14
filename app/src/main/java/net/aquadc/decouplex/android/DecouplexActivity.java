@@ -8,6 +8,8 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 
+import net.aquadc.decouplex.adapter.ResultAdapter;
+
 import java.lang.reflect.Method;
 
 import static net.aquadc.decouplex.Decouplex.*;
@@ -33,9 +35,18 @@ public abstract class DecouplexActivity extends AppCompatActivity {
                     Bundle bun = intent.getExtras();
                     Class face = Class.forName(bun.getString("face"));
                     String method = bun.getString("method");
+                    ResultAdapter adapter = resultAdapter(bun.getInt("resultAdapter"));
 
                     Method handler = responseHandler(DecouplexActivity.this.getClass(), face, method);
-                    handler.invoke(DecouplexActivity.this, bun.get("result"));
+                    handler.setAccessible(true); // protected methods are inaccessible by default O_o
+
+                    if (adapter == null) {
+                        handler.invoke(DecouplexActivity.this, bun.get("result"));
+                    } else {
+                        handler.invoke(DecouplexActivity.this,
+                                arguments(handler.getParameterTypes(),
+                                        adapter.resultParams(face, method, handler, bun)));
+                    }
                 } catch (Exception e) {
                     throw new RuntimeException(e);
                 }

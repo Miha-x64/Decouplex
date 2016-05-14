@@ -6,7 +6,7 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
-import net.aquadc.decouplex.adapter.ResultAdapter;
+import net.aquadc.decouplex.adapter.PostProcessor;
 
 import java.lang.reflect.Method;
 
@@ -33,7 +33,7 @@ public class DecouplexService extends IntentService {
         int implCode = bun.getInt("impl");
 
         Object impl = impl(implCode);
-        ResultAdapter resultAdapter = resultAdapter(bun.getInt("resultAdapter"));
+        PostProcessor postProcessor = postProcessor(bun.getInt("postProcessor"));
 
         try {
             Class<?> face = Class.forName(faceName);
@@ -46,11 +46,12 @@ public class DecouplexService extends IntentService {
             Bundle answer = new Bundle();
             answer.putString("face", faceName);
             answer.putString("method", methodName);
+            answer.putInt("resultAdapter", bun.getInt("resultAdapter"));
 
-            if (resultAdapter == null) {
-                put(answer, "result", result);
+            if (postProcessor == null) {
+                put(answer, "result", method.getReturnType(), result);
             } else {
-                resultAdapter.processResult(answer, face, method, params, result);
+                postProcessor.processAndPutResult(answer, face, method, params, result);
             }
 
             Intent resp = new Intent(ACTION);
