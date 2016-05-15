@@ -1,7 +1,10 @@
 package net.aquadc.decouplex.example;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
-import android.text.Html;
+import android.text.SpannableStringBuilder;
+import android.text.Spanned;
+import android.text.style.StyleSpan;
 import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -50,7 +53,7 @@ public class SampleActivity extends DecouplexActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_example);
+        setContentView(R.layout.activity_sample);
 
         resultView = (TextView) findViewById(R.id.result);
         button0 = findViewById(R.id.button0);
@@ -72,6 +75,8 @@ public class SampleActivity extends DecouplexActivity {
         }
     }
 
+    // Retrofit
+
     public void myGitHub(View v) {
         enableUi(false);
         gitHubService.listRepos("Miha-x64");
@@ -82,24 +87,26 @@ public class SampleActivity extends DecouplexActivity {
         gitHubService.listRepos("square");
     }
 
-    public void longRunningTask(View v) {
-        enableUi(false);
-        longRunningTask.calculateSomethingBig();
-    }
-
     @OnResult("listRepos")
     protected void onReposListed(List<Repo> repos) {
-        StringBuilder sb = new StringBuilder();
+        SpannableStringBuilder sb = new SpannableStringBuilder();
         Iterator<Repo> iterator = repos.iterator();
         while (true) {
             Repo repo = iterator.next();
-            sb.append("<b>").append(repo.name).append("</b><br/>").append(repo.description);
+            int start = sb.length();
+            sb.append(repo.name);
+            sb.setSpan(new StyleSpan(Typeface.BOLD),
+                    start, start + repo.name.length(), Spanned.SPAN_EXCLUSIVE_EXCLUSIVE);
+            if (repo.fork) {
+                sb.append(" (fork)");
+            }
+            sb.append("\n").append(repo.description);
             if (iterator.hasNext())
-                sb.append("<br/><br/>");
+                sb.append("\n\n");
             else
                 break;
         }
-        resultView.setText(Html.fromHtml(sb.toString()));
+        resultView.setText(sb);
         enableUi(true);
     }
 
@@ -108,6 +115,13 @@ public class SampleActivity extends DecouplexActivity {
         Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
         Toast.makeText(this, code + ": " + message, Toast.LENGTH_SHORT).show();
         enableUi(true);
+    }
+
+    // Long running task
+
+    public void longRunningTask(View v) {
+        enableUi(false);
+        longRunningTask.calculateSomethingBig();
     }
 
     @OnResult(face = LongRunningTask.class)

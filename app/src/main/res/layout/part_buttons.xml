@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <Button
+        android:id="@+id/button0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/press_me0"
+        android:textAllCaps="false"
+        android:onClick="myGitHub"/>
+
+    <Button
+        android:id="@+id/button1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/press_me1"
+        android:textAllCaps="false"
+        android:onClick="squareGitHub"/>
+
+    <Button
+        android:id="@+id/button2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/press_me2"
+        android:textAllCaps="false"
+        android:onClick="longRunningTask"/>
+
+</merge>

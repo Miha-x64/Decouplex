@@ -15,33 +15,11 @@
         android:paddingTop="@dimen/activity_vertical_margin"
         tools:context=".example.SampleActivity">
 
-        <Button
-            android:id="@+id/button0"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/press_me0"
-            android:textAllCaps="false"
-            android:onClick="myGitHub"/>
-
-        <Button
-            android:id="@+id/button1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/press_me1"
-            android:textAllCaps="false"
-            android:onClick="squareGitHub"/>
-
-        <Button
-            android:id="@+id/button2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="@string/press_me2"
-            android:textAllCaps="false"
-            android:onClick="longRunningTask"/>
+        <include layout="@layout/part_buttons" />
 
         <TextView
             android:id="@+id/result"
-            android:layout_width="wrap_content"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginLeft="5dp"
             android:layout_marginRight="5dp"

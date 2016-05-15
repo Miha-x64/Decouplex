@@ -15,6 +15,8 @@ public class Repo implements Parcelable {
 
     public int id;
 
+    public boolean fork;
+
     public String name;
 
     @JsonProperty("full_name")
@@ -30,6 +32,7 @@ public class Repo implements Parcelable {
     @Override
     public void writeToParcel(Parcel dest, int flags) {
         dest.writeInt(id);
+        dest.writeByte((byte) (fork ? 1 : 0));
         dest.writeString(name);
         dest.writeString(fullName);
         dest.writeString(description);
@@ -40,6 +43,7 @@ public class Repo implements Parcelable {
         public Repo createFromParcel(Parcel source) {
             Repo repo = new Repo();
             repo.id = source.readInt();
+            repo.fork = source.readByte() == 1;
             repo.name = source.readString();
             repo.fullName = source.readString();
             repo.description = source.readString();
