@@ -7,8 +7,8 @@ import java.util.Set;
 
 /**
  * Created by miha on 15.05.16.
- *
+ * you can add arguments to the set so they can be dispatched to the handler method
  */
 public interface ResultAdapter {
-    Set<Object> resultParams(Class face, String methodName, Method handler, Bundle answer);
+    void adapt(Class face, String methodName, Method handler, Bundle answer, Set<Object> args);
 }

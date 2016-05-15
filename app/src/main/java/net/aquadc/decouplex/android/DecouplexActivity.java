@@ -29,13 +29,13 @@ public abstract class DecouplexActivity extends AppCompatActivity {
                 public void onReceive(Context context, Intent intent) {
                     Bundle resp = intent.getExtras();
                     if (ACTION_RESULT.equals(intent.getAction())) {
-                        Decouplex<?> decouplex = Decouplex.find(resp.getInt("id"));
+                        Decouplex decouplex = Decouplex.find(resp.getInt("id"));
                         decouplex.dispatchResult(DecouplexActivity.this, resp);
                     } else if (ACTION_ERR.equals(intent.getAction())) {
                         Bundle req = resp.getBundle("request");
                         assert req != null;
 
-                        Decouplex<?> decouplex = Decouplex.find(req.getInt("id"));
+                        Decouplex decouplex = Decouplex.find(req.getInt("id"));
                         decouplex.dispatchError(DecouplexActivity.this, req, resp);
                     }
                 }

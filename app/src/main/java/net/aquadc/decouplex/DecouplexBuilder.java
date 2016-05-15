@@ -17,10 +17,11 @@ import java.lang.reflect.Proxy;
  * Created by miha on 14.05.16.
  *
  */
-public class DecouplexBuilder<FACE> {
+public class DecouplexBuilder<FACE, HANDLER> {
 
     private Class face;
     private FACE impl;
+    private Class<HANDLER> handler;
 
     private ResultProcessor resultProcessor;
     private ResultAdapter resultAdapter;
@@ -28,25 +29,26 @@ public class DecouplexBuilder<FACE> {
     private ErrorProcessor errorProcessor;
     private ErrorAdapter errorAdapter;
 
-    public DecouplexBuilder(@NonNull Class<FACE> face) {
+    public DecouplexBuilder(@NonNull Class<FACE> face, @NonNull FACE impl, @NonNull Class<HANDLER> handler) {
         // noinspection ConstantConditions
         if (face == null)
             throw new NullPointerException("interface required, null given");
         if (!face.isInterface())
             throw new IllegalArgumentException("interface required");
-        this.face = face;
-    }
-
-    public DecouplexBuilder<FACE> impl(@NonNull FACE impl) {
         // noinspection ConstantConditions
         if (impl == null) {
             throw new NullPointerException("interface implementation required, null given");
         }
+        // noinspection ConstantConditions
+        if (handler == null) {
+            throw new NullPointerException("handler class require, null given");
+        }
+        this.face = face;
         this.impl = impl;
-        return this;
+        this.handler = handler;
     }
 
-    public DecouplexBuilder<FACE> resultProcessor(@NonNull ResultProcessor processor) {
+    public DecouplexBuilder<FACE, HANDLER> resultProcessor(@NonNull ResultProcessor processor) {
         // noinspection ConstantConditions
         if (processor == null) {
             throw new NullPointerException("attempt to set null ResultProcessor");
@@ -55,7 +57,7 @@ public class DecouplexBuilder<FACE> {
         return this;
     }
 
-    public DecouplexBuilder<FACE> resultAdapter(@NonNull ResultAdapter adapter) {
+    public DecouplexBuilder<FACE, HANDLER> resultAdapter(@NonNull ResultAdapter adapter) {
         // noinspection ConstantConditions
         if (adapter == null) {
             throw new NullPointerException("attempt to set null ResultAdapter");
@@ -64,7 +66,7 @@ public class DecouplexBuilder<FACE> {
         return this;
     }
 
-    public DecouplexBuilder<FACE> errorProcessor(@NonNull ErrorProcessor processor) {
+    public DecouplexBuilder<FACE, HANDLER> errorProcessor(@NonNull ErrorProcessor processor) {
         // noinspection ConstantConditions
         if (processor == null) {
             throw new NullPointerException("attempt to set null ErrorProcessor");
@@ -73,7 +75,7 @@ public class DecouplexBuilder<FACE> {
         return this;
     }
 
-    public DecouplexBuilder<FACE> errorAdapter(@NonNull ErrorAdapter adapter) {
+    public DecouplexBuilder<FACE, HANDLER> errorAdapter(@NonNull ErrorAdapter adapter) {
         // noinspection ConstantConditions
         if (adapter == null) {
             throw new NullPointerException("attempt to set null ErrorAdapter");
@@ -95,14 +97,13 @@ public class DecouplexBuilder<FACE> {
         return (FACE) Proxy.newProxyInstance(
                 face.getClassLoader(), new Class[]{face},
                 new Decouplex<>(context.getApplicationContext(),
-                        face, impl,
+                        face, impl, handler,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter));
     }
 
-    public static <FACE> FACE retrofit2(Context context, Class<FACE> face, FACE impl) {
-        return new DecouplexBuilder<>(face)
-                .impl(impl)
+    public static <FACE, HANDLER> FACE retrofit2(Context context, Class<FACE> face, FACE impl, Class<HANDLER> handler) {
+        return new DecouplexBuilder<>(face, impl, handler)
                 .resultProcessor(new Retrofit2ResultProcessor())
                 .resultAdapter(new Retrofit2ResultAdapter())
                 .errorAdapter(new Retrofit2ErrorAdapter())

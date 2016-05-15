@@ -1,9 +1,8 @@
 package net.aquadc.decouplex;
 
 import android.os.Bundle;
-
-import net.aquadc.decouplex.annotation.OnError;
-import net.aquadc.decouplex.annotation.OnResult;
+import android.support.annotation.Nullable;
+import android.util.Pair;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -58,50 +57,40 @@ import java.util.Set;
 
     /**
      * find handler for the method result
-     * @param target class where lookup will be produced
-     * @param face interface through which the action was performed
-     * @param methodName method name from the given interface
-     * @return method to handle response
+     * @param methodName    the name of method that has been invoked
+     * @param handlers      many handlers, lol
+     * @return Method to handle response
      */
-    /*package*/ static Method resultHandler(Class target, Class face, String methodName) {
-        // TODO: nullable classes & wildcard methods
-        Method[] methods = target.getDeclaredMethods();
-        for (Method method : methods) {
-            OnResult onResult = method.getAnnotation(OnResult.class);
-            if (onResult == null)
-                continue;
-            if (onResult.face() != face)
-                continue;
-            if (!onResult.method().equals(methodName))
-                continue;
-            return method;
-        }
-        throw new RuntimeException("handler for " + face.getSimpleName() + "::" + methodName +
-                " not found in " + target.getSimpleName());
+    /*package*/ static Method handler(String methodName, Pair<Handlers, Handlers> handlers) {
+
+        Method handler = handler(methodName, handlers.first);
+        if (handler != null)
+            return handler;
+
+        handler = handler(methodName, handlers.second);
+        if (handler != null)
+            return handler;
+
+        throw new RuntimeException("handler for " + methodName + " not found");
     }
 
-    /**
-     * find handler for the method exception
-     * @param target class where lookup will be produced
-     * @param face interface through which the action was performed
-     * @param methodName method name from the given interface
-     * @return method to handle response
-     */
-    /*package*/ static Method errorHandler(Class target, Class face, String methodName) {
-        // TODO: wildcard
-        Method[] methods = target.getDeclaredMethods();
-        for (Method method : methods) {
-            OnError onResult = method.getAnnotation(OnError.class);
-            if (onResult == null)
-                continue;
-            if (onResult.face() != face)
-                continue;
-            if (!onResult.method().equals(methodName))
-                continue;
-            return method;
+    @Nullable
+    private static Method handler(String methodName, Handlers handlers) {
+        Method handler = handlers.immediateHandlers.get(methodName);
+        if (handler != null)
+            return handler;
+
+        for (String wildcard : handlers.wildcardHandlers.keySet()) {
+            if (matches(methodName, wildcard)) {
+                return handlers.wildcardHandlers.get(wildcard);
+            }
         }
-        throw new RuntimeException("error handler for " + face.getSimpleName() + "::" + methodName +
-                " not found in " + target.getSimpleName());
+
+        return handlers.fallback;
+    }
+
+    private static boolean matches(String text, String wildcard) {
+        return text.matches(wildcard.replace("*", ".*?"));
     }
 
     /**

@@ -11,7 +11,7 @@ import java.util.Set;
  */
 public class Retrofit2ErrorAdapter implements ErrorAdapter {
     @Override
-    public void adaptErrorParams(Class face, String methodName, Method handler, Throwable t, Bundle bun, Set<Object> params) {
+    public void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params) {
         if (t instanceof HttpException) {
             params.add(((HttpException) t).code);
             params.add(((HttpException) t).message);

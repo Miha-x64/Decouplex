@@ -7,8 +7,8 @@ import java.util.Set;
 
 /**
  * Created by miha on 15.05.16.
- *
+ * {@see ResultAdapter}
  */
 public interface ErrorAdapter {
-    void adaptErrorParams(Class face, String methodName, Method handler, Throwable t, Bundle bun, Set<Object> params);
+    void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params);
 }

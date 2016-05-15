@@ -9,6 +9,6 @@ import java.lang.annotation.RetentionPolicy;
  */
 @Retention(RetentionPolicy.RUNTIME)
 public @interface OnResult {
-    Class face();
-    String method();
+    Class face() default Void.class; // handling results on _face_ interface; Void means any
+    String value() default "*"; // handling results of _value_ method; "*" means any
 }

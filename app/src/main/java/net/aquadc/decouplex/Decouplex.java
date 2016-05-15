@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+import android.util.Pair;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
@@ -16,6 +18,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.HashSet;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import static net.aquadc.decouplex.TypeUtils.*;
 import static net.aquadc.decouplex.Converter.put;
@@ -24,7 +27,7 @@ import static net.aquadc.decouplex.Converter.put;
  * Created by miha on 14.05.16.
  *
  */
-public class Decouplex<FACE> implements InvocationHandler {
+public class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
     /**
      * Actions to use in Intents
@@ -42,7 +45,7 @@ public class Decouplex<FACE> implements InvocationHandler {
     private static int requestSenderCount;
 
     @SuppressWarnings("unchecked")
-    public static <T> Decouplex<T> find(int id) {
+    public static <T, H> Decouplex<T, H> find(int id) {
         return instances.get(id).get();
     }
 
@@ -61,14 +64,19 @@ public class Decouplex<FACE> implements InvocationHandler {
     private final ErrorProcessor errorProcessor;
     private final ErrorAdapter errorAdapter;
 
+    private final Class<HANDLER> handler;
+    private Pair<Handlers, Handlers> resultHandlers;
+    private Pair<Handlers, Handlers> errorHandlers;
+
     Decouplex(Context context,
-              Class<FACE> face, FACE impl,
+              Class<FACE> face, FACE impl, Class<HANDLER> handler,
               ResultProcessor resultProcessor, ResultAdapter resultAdapter,
               ErrorProcessor errorProcessor, ErrorAdapter errorAdapter) {
         this.context = context;
 
         this.face = face;
         this.impl = impl;
+        this.handler = handler;
 
         this.resultProcessor = resultProcessor;
         this.resultAdapter = resultAdapter;
@@ -106,7 +114,7 @@ public class Decouplex<FACE> implements InvocationHandler {
         return null;
     }
 
-    public void dispatchRequest(Context con, Bundle req) {
+    public void execute(Context con, Bundle req) {
         String methodName = req.getString("method");
 
         Class<?>[] types;
@@ -133,11 +141,7 @@ public class Decouplex<FACE> implements InvocationHandler {
                 resultProcessor.process(resp, face, method, params, result);
             }
 
-            Intent res = new Intent(ACTION_RESULT);
-            res.putExtras(resp);
-            LocalBroadcastManager
-                    .getInstance(con)
-                    .sendBroadcast(res);
+            broadcast(con, ACTION_RESULT, resp);
         } catch (Exception e) {
             Bundle resp = new Bundle();
             resp.putBundle("request", req);
@@ -147,28 +151,47 @@ public class Decouplex<FACE> implements InvocationHandler {
                 errorProcessor.process(resp, face, method, params, e);
             }
 
-            Intent err = new Intent(ACTION_ERR);
-            err.putExtras(resp);
-            LocalBroadcastManager
-                    .getInstance(con)
-                    .sendBroadcast(err);
+            broadcast(con, ACTION_ERR, resp);
+        }
+    }
+
+    private static void broadcast(Context con, String action, Bundle extras) {
+        Intent i = new Intent(action);
+        i.putExtras(extras);
+        LocalBroadcastManager man = LocalBroadcastManager.getInstance(con);
+        int attempts = 0;
+        while (!man.sendBroadcast(i)) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(500);
+            } catch (InterruptedException e) {
+                // ok
+            }
+            attempts++;
+            if (attempts == 5) {
+                Log.e("Decouplex", "Intent has not been delivered: " + i);
+                break;
+            }
         }
     }
 
     public void dispatchResult(Object resultHandler, Bundle bun) {
-        try {
-            String method = bun.getString("method");
+        String method = bun.getString("method");
 
-            Method handler = resultHandler(resultHandler.getClass(), face, method);
+        try {
+            if (resultHandlers == null) {
+                findHandlers();
+            }
+            Method handler = handler(method, resultHandlers);
             handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
-            if (resultAdapter == null) {
-                handler.invoke(resultHandler, bun.get("result"));
-            } else {
-                handler.invoke(resultHandler,
-                        arguments(handler.getParameterTypes(),
-                                resultAdapter.resultParams(face, method, handler, bun)));
+            HashSet<Object> args = new HashSet<>();
+            args.add(bun.get("result"));
+
+            if (resultAdapter != null) {
+                resultAdapter.adapt(face, method, handler, bun, args);
             }
+
+            handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -177,22 +200,33 @@ public class Decouplex<FACE> implements InvocationHandler {
     public void dispatchError(Object resultHandler, Bundle req, Bundle resp) {
         Throwable e = (Throwable) resp.get("exception");
 
+        String methodName = req.getString("method");
+
         HashSet<Object> args = new HashSet<>();
 //        args.add(resp);
         args.add(e);
 
         try {
-            Method handler = errorHandler(resultHandler.getClass(), face, req.getString("method"));
+            if (resultHandlers == null) {
+                findHandlers();
+            }
+            Method handler = handler(methodName, errorHandlers);
 
             handler.setAccessible(true);
 
             if (errorAdapter != null) {
-                errorAdapter.adaptErrorParams(face, req.getString("method"), handler, e, resp, args);
+                errorAdapter.adapt(face, methodName, handler, e, resp, args);
             }
 
             handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
         } catch (Exception f) {
             throw new RuntimeException(f);
         }
+    }
+
+    private void findHandlers() {
+        Handlers[] h = Handlers.analyze(handler);
+        resultHandlers = new Pair<>(h[0], h[1]);
+        errorHandlers = new Pair<>(h[2], h[3]);
     }
 }

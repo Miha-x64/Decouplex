@@ -12,57 +12,113 @@ import net.aquadc.decouplex.android.DecouplexActivity;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
+import java.math.BigInteger;
+import java.text.NumberFormat;
+import java.util.Iterator;
 import java.util.List;
 
-import okhttp3.OkHttpClient;
-import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class SampleActivity extends DecouplexActivity {
 
-    private final GitHubService gitHubRetrofitService =
-            new Retrofit.Builder()
-                    .client(new OkHttpClient.Builder()
-                            .addInterceptor(new HttpLoggingInterceptor()
-                                    .setLevel(HttpLoggingInterceptor.Level.BODY)).build())
-                    .baseUrl("https://api.github.com/")
-                    .addConverterFactory(JacksonConverterFactory.create())
-                    .build()
-                    .create(GitHubService.class);
+    private final GitHubService gitHubService;
 
-    private final GitHubService gitHubService =
-            DecouplexBuilder
-                    .retrofit2(DecouplexTestApp.getInstance(),
-                            GitHubService.class, gitHubRetrofitService);
+    public SampleActivity() {
+        // configure Retrofit
+        GitHubService gitHubRetrofitService =
+                new Retrofit.Builder()
+                        .baseUrl("https://api.github.com/")
+                        .addConverterFactory(JacksonConverterFactory.create())
+                        .build()
+                        .create(GitHubService.class);
 
-    private TextView result;
+        // configure Decouplex
+        gitHubService = DecouplexBuilder
+                .retrofit2(DecouplexTestApp.getInstance(),
+                        GitHubService.class, gitHubRetrofitService, getClass());
+    }
+
+    // configure another Decouplex
+    private final LongRunningTask longRunningTask =
+            new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), getClass())
+                    .create(DecouplexTestApp.getInstance());
+
+    private TextView resultView;
+    private View button0, button1, button2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_example);
 
-        result = (TextView) findViewById(R.id.result);
+        resultView = (TextView) findViewById(R.id.result);
+        button0 = findViewById(R.id.button0);
+        button1 = findViewById(R.id.button1);
+        button2 = findViewById(R.id.button2);
     }
 
-    public void gitHub(View v) {
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putBoolean("UIEnabled", button0.isEnabled());
+    }
+
+    @Override
+    protected void onRestoreInstanceState(Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        if (savedInstanceState != null) {
+            enableUi(savedInstanceState.getBoolean("UIEnabled", true));
+        }
+    }
+
+    public void myGitHub(View v) {
+        enableUi(false);
         gitHubService.listRepos("Miha-x64");
     }
 
-    @OnResult(face = GitHubService.class, method = "listRepos")
-    protected void onReposListed(List<Repo> repos, int code) {
-        StringBuilder sb = new StringBuilder();
-        for (Repo repo : repos) {
-            sb.append("<b>").append(repo.name).append("</b><br/>").append(repo.description).append("<br/><br/>");
-        }
-        result.setText(Html.fromHtml(sb.toString()));
-        Toast.makeText(this, "resp code: " + code, Toast.LENGTH_SHORT).show();
+    public void squareGitHub(View v) {
+        enableUi(false);
+        gitHubService.listRepos("square");
     }
 
-    @OnError(face = GitHubService.class, method = "listRepos")
+    public void longRunningTask(View v) {
+        enableUi(false);
+        longRunningTask.calculateSomethingBig();
+    }
+
+    @OnResult("listRepos")
+    protected void onReposListed(List<Repo> repos) {
+        StringBuilder sb = new StringBuilder();
+        Iterator<Repo> iterator = repos.iterator();
+        while (true) {
+            Repo repo = iterator.next();
+            sb.append("<b>").append(repo.name).append("</b><br/>").append(repo.description);
+            if (iterator.hasNext())
+                sb.append("<br/><br/>");
+            else
+                break;
+        }
+        resultView.setText(Html.fromHtml(sb.toString()));
+        enableUi(true);
+    }
+
+    @OnError
     protected void onError(Exception e, int code, String message) {
         Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
         Toast.makeText(this, code + ": " + message, Toast.LENGTH_SHORT).show();
+        enableUi(true);
+    }
+
+    @OnResult(face = LongRunningTask.class)
+    protected void onResultCalculated(BigInteger result) {
+        resultView.setText(NumberFormat.getNumberInstance().format(result));
+        enableUi(true);
+    }
+
+    private void enableUi(boolean enable) {
+        button0.setEnabled(enable);
+        button1.setEnabled(enable);
+        button2.setEnabled(enable);
     }
 }

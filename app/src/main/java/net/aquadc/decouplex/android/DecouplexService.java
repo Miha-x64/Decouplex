@@ -24,7 +24,7 @@ public class DecouplexService extends IntentService {
             return;
 
         Bundle req = intent.getExtras();
-        Decouplex<?> decouplex = Decouplex.find(req.getInt("id"));
-        decouplex.dispatchRequest(this, req);
+        Decouplex decouplex = Decouplex.find(req.getInt("id"));
+        decouplex.execute(this, req);
     }
 }
