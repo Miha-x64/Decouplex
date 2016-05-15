@@ -1,374 +1,198 @@
 package net.aquadc.decouplex;
 
-import android.os.Build;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
-import android.os.IBinder;
-import android.os.Parcelable;
-import android.util.Log;
-import android.util.Size;
-import android.util.SizeF;
+import android.support.v4.content.LocalBroadcastManager;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
-import net.aquadc.decouplex.adapter.Packer;
-import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
-import net.aquadc.decouplex.annotation.OnError;
-import net.aquadc.decouplex.annotation.OnResult;
+import net.aquadc.decouplex.adapter.ResultProcessor;
+import net.aquadc.decouplex.android.DecouplexService;
 
-import java.io.Serializable;
+import java.lang.ref.WeakReference;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+
+import static net.aquadc.decouplex.TypeUtils.*;
+import static net.aquadc.decouplex.Converter.put;
 
 /**
  * Created by miha on 14.05.16.
  *
  */
-public abstract class Decouplex {
+public class Decouplex<FACE> implements InvocationHandler {
 
     /**
-     * Action to use in Intents
+     * Actions to use in Intents
      */
     public static final String ACTION_EXEC = "DECOUPLEX_EXEC";
     public static final String ACTION_RESULT = "DECOUPLEX_RESULT";
     public static final String ACTION_ERR = "DECOUPLEX_ERR";
 
     /**
-     * lambdas used to pack objects of final types
-     * (no primitives here, because {@see java.lang.reflect.Proxy} wraps them)
+     * Instances management
      */
-    private static final Map<Class, Packer> immediatePackers;
-    static {
-        HashMap<Class, Packer> m = new HashMap<>();
+    private static final
+        ConcurrentHashMap<Integer, WeakReference<Decouplex>> instances = new ConcurrentHashMap<>();
+    private static final Object counterLock = new Object();
+    private static int requestSenderCount;
 
-        m.put(Boolean.class,        (b, k, v) -> b.putBoolean(k,    (boolean) v));
-        m.put(Byte.class,           (b, k, v) -> b.putByte(k,       (byte) v));
-        m.put(Short.class,          (b, k, v) -> b.putShort(k,      (short) v));
-        m.put(Character.class,      (b, k, v) -> b.putChar(k,       (char) v));
-        m.put(Integer.class,        (b, k, v) -> b.putInt(k,        (int) v));
-        m.put(Long.class,           (b, k, v) -> b.putLong(k,       (long) v));
-        m.put(Float.class,          (b, k, v) -> b.putFloat(k,      (float) v));
-        m.put(Double.class,         (b, k, v) -> b.putDouble(k,     (double) v));
-
-        m.put(boolean[].class,      (b, k, v) -> b.putBooleanArray(k,   (boolean[]) v));
-        m.put(byte[].class,         (b, k, v) -> b.putByteArray(k,      (byte[]) v));
-        m.put(short[].class,        (b, k, v) -> b.putShortArray(k,     (short[]) v));
-        m.put(char[].class,         (b, k, v) -> b.putCharArray(k,      (char[]) v));
-        m.put(int[].class,          (b, k, v) -> b.putIntArray(k,       (int[]) v));
-        m.put(long[].class,         (b, k, v) -> b.putLongArray(k,      (long[]) v));
-        m.put(float[].class,        (b, k, v) -> b.putFloatArray(k,     (float[]) v));
-        m.put(double[].class,       (b, k, v) -> b.putDoubleArray(k,    (double[]) v));
-
-        m.put(String.class,         (b, k, v) -> b.putString(k, (String) v));
-        m.put(Bundle.class,         (b, k, v) -> b.putBundle(k, (Bundle) v));
-
-        if (Build.VERSION.SDK_INT >= 21) {
-            m.put(Size.class, (b, k, v) -> b.putSize(k, (Size) v));
-            m.put(SizeF.class, (b, k, v) -> b.putSizeF(k, (SizeF) v));
-        }
-
-        m.put(String[].class,       (b, k, v) -> b.putStringArray(k, (String[]) v));
-
-        immediatePackers = Collections.unmodifiableMap(m);
-    }
-
-    /**
-     * lambdas used to pack objects of non-final types
-     */
-    public static final Map<Class, Packer> mediatedPackers;
-    static {
-        HashMap<Class, Packer> m = new HashMap<>();
-
-        m.put(CharSequence.class,   (b, k, v) -> b.putCharSequence(k,       (CharSequence) v));
-        m.put(CharSequence[].class, (b, k, v) -> b.putCharSequenceArray(k,  (CharSequence[]) v));
-
-        m.put(Parcelable.class,     (b, k, v) -> b.putParcelable(k,         (Parcelable) v));
-        m.put(Parcelable[].class,   (b, k, v) -> b.putParcelableArray(k,    (Parcelable[]) v));
-
-        if (Build.VERSION.SDK_INT >= 18) {
-            m.put(IBinder.class, (b, k, v) -> b.putBinder(k, (IBinder) v));
-        }
-
-        mediatedPackers = Collections.unmodifiableMap(m);
-    }
-
-    public static final Map<Class, Class> wrappers;
-    static {
-        HashMap<Class, Class> m = new HashMap<>();
-
-        m.put(boolean.class,Boolean.class);
-        m.put(byte.class,   Byte.class);
-        m.put(short.class,  Short.class);
-        m.put(char.class,   Character.class);
-        m.put(int.class,    Integer.class);
-        m.put(long.class,   Long.class);
-        m.put(float.class,  Float.class);
-        m.put(double.class, Double.class);
-
-        wrappers = Collections.unmodifiableMap(m);
-    }
-
-    /**
-     * Class.forName ignores primitives, it is a workaround
-     */
-    public static final Map<String, Class> primitives;
-    static {
-        HashMap<String, Class> m = new HashMap<>();
-
-        m.put(boolean.class.getCanonicalName(), boolean.class);
-        m.put(byte.class.getCanonicalName(),    byte.class);
-        m.put(short.class.getCanonicalName(),   short.class);
-        m.put(char.class.getCanonicalName(),    char.class);
-        m.put(int.class.getCanonicalName(),     int.class);
-        m.put(long.class.getCanonicalName(),    long.class);
-        m.put(float.class.getCanonicalName(),   float.class);
-        m.put(double.class.getCanonicalName(),  double.class);
-
-        primitives = Collections.unmodifiableMap(m);
-    }
-
-    /**
-     * Implementations of interfaces
-     */
-    static final Map<Integer, Object> implementations = new HashMap<>();
-
-    public static Object impl(int code) {
-        return implementations.get(code);
-    }
-
-    /**
-     * Result post-processors
-     */
-    static final Map<Integer, ResultProcessor> resultProcessors = new HashMap<>();
-
-    public static ResultProcessor resultProcessor(int code) {
-        return resultProcessors.get(code);
-    }
-    /**
-     * Result adapters
-     */
-    static final Map<Integer, ResultAdapter> resultAdapters = new HashMap<>();
-
-    public static ResultAdapter resultAdapter(int code) {
-        return resultAdapters.get(code);
-    }
-
-    /**
-     * Error post-processors
-     */
-    static final Map<Integer, ErrorProcessor> errorProcessors = new HashMap<>();
-
-    public static ErrorProcessor errorProcessor(int code) {
-        return errorProcessors.get(code);
-    }
-    /**
-     * Error adapters
-     */
-    static final Map<Integer, ErrorAdapter> errorAdapters = new HashMap<>();
-
-    public static ErrorAdapter errorAdapter(int code) {
-        return errorAdapters.get(code);
-    }
-
-    /**
-     * find handler for the method result
-     * @param target class where lookup will be produced
-     * @param face interface through which the action was performed
-     * @param methodName method name from the given interface
-     * @return method to handle response
-     */
-    public static Method responseHandler(Class target, Class face, String methodName) {
-        // TODO: wildcard
-        Method[] methods = target.getDeclaredMethods();
-        for (Method method : methods) {
-            OnResult onResult = method.getAnnotation(OnResult.class);
-            if (onResult == null)
-                continue;
-            if (onResult.face() != face)
-                continue;
-            if (!onResult.method().equals(methodName))
-                continue;
-            return method;
-        }
-        throw new RuntimeException("handler for " + face.getSimpleName() + "::" + methodName +
-                " not found in " + target.getSimpleName());
-    }
-
-    /**
-     * find handler for the method exception
-     * @param target class where lookup will be produced
-     * @param face interface through which the action was performed
-     * @param methodName method name from the given interface
-     * @return method to handle response
-     */
-    public static Method errorHandler(Class target, Class face, String methodName) {
-        // TODO: wildcard
-        Method[] methods = target.getDeclaredMethods();
-        for (Method method : methods) {
-            OnError onResult = method.getAnnotation(OnError.class);
-            if (onResult == null)
-                continue;
-            if (onResult.face() != face)
-                continue;
-            if (!onResult.method().equals(methodName))
-                continue;
-            return method;
-        }
-        throw new RuntimeException("error handler for " + face.getSimpleName() + "::" + methodName +
-                " not found in " + target.getSimpleName());
-    }
-
-    /**
-     * Pack parameters, passed to the method, to the bundle
-     * @param bun bundle where arguments will be put
-     * @param args arguments
-     */
-    public static void packParameters(Bundle bun, Class[] types, Object[] args) {
-        for (int i = 0; i < args.length; i++) {
-            put(bun, Integer.toString(i), types[i], args[i]);
-        }
-    }
-
-    /**
-     * Unpack parameters
-     * @param bun bundle where the parameters stored
-     * @param count number of parameters
-     * @return parameters
-     */
-    public static Object[] unpackParameters(Bundle bun, int count) {
-        Object[] params = new Object[count];
-        for (int i = 0; i < count; i++) {
-            params[i] = bun.get(Integer.toString(i));
-        }
-        return params;
-    }
-
-    /**
-     * Store parameter types to the bundle
-     * @param bun bundle to store types
-     * @param types types
-     */
-    public static void packTypes(Bundle bun, Class<?>[] types) {
-        for (int i = 0; i < types.length; i++) {
-            Class<?> type = types[i];
-//            if (type.isPrimitive()) {
-//                type = wrappers.get(type);
-//            }
-            bun.putString("T" + Integer.toString(i), type.getCanonicalName());
-        }
-    }
-
-    /**
-     * Obtain parameter types from the bundle
-     * @param bun bundle
-     * @return types
-     */
-    public static Class<?>[] unpackTypes(Bundle bun) {
-        ArrayList<Class> types = new ArrayList<>();
-        String type;
-        int i = 0;
-        while ((type = bun.getString("T" + i)) != null) {
-            types.add(classForName(type));
-            i++;
-        }
-        Class[] classes = new Class[types.size()];
-        return types.toArray(classes);
-    }
-
-    /**
-     * Put an object to a bundle
-     * @param bun bundle
-     * @param key key
-     * @param value object
-     */
     @SuppressWarnings("unchecked")
-    public static void put(Bundle bun, String key, Type type, Object value) {
-        if (value == null)
-            return;
-
-        // final classes that can be just found in the set
-        Packer p = immediatePackers.get(value.getClass());
-        if (p != null) {
-            p.put(bun, key, value);
-            return;
-        }
-
-        // interfaces or non-final classes that must be checked with instanceof
-        for (Class medType : mediatedPackers.keySet()) {
-            if (medType.isInstance(value)) {
-                mediatedPackers.get(medType).put(bun, key, value);
-                return;
-            }
-        }
-
-        // ArrayList<Something>
-
-        if (ArrayList.class.isInstance(value)) {
-            Class E = (Class) ((ParameterizedType) type).getActualTypeArguments()[0];
-            if (E == Integer.class) {
-                bun.putIntegerArrayList(key, (ArrayList<Integer>) value);
-                return;
-            } else if (E == String.class) {
-                bun.putStringArrayList(key, (ArrayList<String>) value);
-                return;
-            } else if (CharSequence.class.isAssignableFrom(E)) {
-                bun.putCharSequenceArrayList(key, (ArrayList<CharSequence>) value);
-                return;
-            } else if (Parcelable.class.isAssignableFrom(E)) {
-                bun.putParcelableArrayList(key, (ArrayList<Parcelable>) value);
-                return;
-            }
-        }
-
-        // TODO: SparseArray<Parcelable>
-
-        // the last, the worst try
-        if (value instanceof Serializable) {
-            bun.putSerializable(key, (Serializable) value);
-            if (!(value instanceof Throwable)) { // serializing Exceptions is ok
-                Log.e("Decouplex", "warn: writing Serializable (" + value.getClass() + ") to bundle");
-            }
-            return;
-        }
-
-        throw new IllegalArgumentException("unknown type: " + value.getClass());
+    public static <T> Decouplex<T> find(int id) {
+        return instances.get(id).get();
     }
 
-    private static Class<?> classForName(String name) {
-        Class cls = primitives.get(name);
-        if (cls != null)
-            return cls;
+    /**
+     * instance
+     */
+    private final int id;
+
+    private final Context context;
+
+    private final Class<FACE> face;
+    private final FACE impl;
+
+    private final ResultProcessor resultProcessor;
+    private final ResultAdapter resultAdapter;
+    private final ErrorProcessor errorProcessor;
+    private final ErrorAdapter errorAdapter;
+
+    Decouplex(Context context,
+              Class<FACE> face, FACE impl,
+              ResultProcessor resultProcessor, ResultAdapter resultAdapter,
+              ErrorProcessor errorProcessor, ErrorAdapter errorAdapter) {
+        this.context = context;
+
+        this.face = face;
+        this.impl = impl;
+
+        this.resultProcessor = resultProcessor;
+        this.resultAdapter = resultAdapter;
+
+        this.errorProcessor = errorProcessor;
+        this.errorAdapter = errorAdapter;
+
+        synchronized (counterLock) {
+            requestSenderCount++;
+            id = requestSenderCount;
+        }
+        instances.put(id, new WeakReference<>(this));
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+
+        Bundle data = new Bundle();
+
+        data.putInt("id", id);
+        data.putString("method", method.getName());
+
+        Class[] types = method.getParameterTypes();
+        packTypes(data, types);
+        packParameters(data, types, args);
+
+        Intent service = new Intent(context, DecouplexService.class);
+        service.setAction(ACTION_EXEC);
+        service.putExtras(data);
+
+        context.startService(service);
+
+        if (method.getReturnType().isPrimitive())
+            return 0;
+        return null;
+    }
+
+    public void dispatchRequest(Context con, Bundle req) {
+        String methodName = req.getString("method");
+
+        Class<?>[] types;
+        Method method;
+        Object[] params;
         try {
-            return Class.forName(name);
-        } catch (ClassNotFoundException e) {
+            types = unpackTypes(req);
+            method = face.getDeclaredMethod(methodName, types);
+            params = unpackParameters(req, types.length);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+        try {
+            Object result = method.invoke(impl, params);
+
+            Bundle resp = new Bundle();
+            resp.putInt("id", id);
+            resp.putString("method", methodName);
+
+            if (resultProcessor == null) {
+                put(resp, "result", method.getReturnType(), result);
+            } else {
+                resultProcessor.process(resp, face, method, params, result);
+            }
+
+            Intent res = new Intent(ACTION_RESULT);
+            res.putExtras(resp);
+            LocalBroadcastManager
+                    .getInstance(con)
+                    .sendBroadcast(res);
+        } catch (Exception e) {
+            Bundle resp = new Bundle();
+            resp.putBundle("request", req);
+            put(resp, "exception", null, e);
+
+            if (errorProcessor!= null) {
+                errorProcessor.process(resp, face, method, params, e);
+            }
+
+            Intent err = new Intent(ACTION_ERR);
+            err.putExtras(resp);
+            LocalBroadcastManager
+                    .getInstance(con)
+                    .sendBroadcast(err);
+        }
+    }
+
+    public void dispatchResult(Object resultHandler, Bundle bun) {
+        try {
+            String method = bun.getString("method");
+
+            Method handler = resultHandler(resultHandler.getClass(), face, method);
+            handler.setAccessible(true); // protected methods are inaccessible by default O_o
+
+            if (resultAdapter == null) {
+                handler.invoke(resultHandler, bun.get("result"));
+            } else {
+                handler.invoke(resultHandler,
+                        arguments(handler.getParameterTypes(),
+                                resultAdapter.resultParams(face, method, handler, bun)));
+            }
+        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }
 
-    public static Object[] arguments(Class[] types, Set<Object> args) {
-        Object[] params = new Object[types.length];
-        for (int i = 0; i < types.length; i++) {
-            Class type = types[i];
-            Object arg = null;
-            for (Object o : args) {
-                if (type.isInstance(o) ||
-                        (type.isPrimitive() && wrappers.get(type).isInstance(o))) {
-                    arg = o;
-                    break;
-                }
-            }
-            if (arg == null) {
-                throw new IllegalArgumentException("can't find applicable argument of type " + type);
-            }
-            params[i] = arg;
-        }
-        return params;
-    }
+    public void dispatchError(Object resultHandler, Bundle req, Bundle resp) {
+        Throwable e = (Throwable) resp.get("exception");
 
+        HashSet<Object> args = new HashSet<>();
+//        args.add(resp);
+        args.add(e);
+
+        try {
+            Method handler = errorHandler(resultHandler.getClass(), face, req.getString("method"));
+
+            handler.setAccessible(true);
+
+            if (errorAdapter != null) {
+                errorAdapter.adaptErrorParams(face, req.getString("method"), handler, e, resp, args);
+            }
+
+            handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
+        } catch (Exception f) {
+            throw new RuntimeException(f);
+        }
+    }
 }

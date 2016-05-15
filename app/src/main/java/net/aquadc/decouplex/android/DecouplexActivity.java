@@ -8,11 +8,7 @@ import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 
-import net.aquadc.decouplex.adapter.ErrorAdapter;
-import net.aquadc.decouplex.adapter.ResultAdapter;
-
-import java.lang.reflect.Method;
-import java.util.HashSet;
+import net.aquadc.decouplex.Decouplex;
 
 import static net.aquadc.decouplex.Decouplex.*;
 
@@ -27,58 +23,24 @@ public abstract class DecouplexActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        receiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                Bundle bun = intent.getExtras();
-                if (ACTION_RESULT.equals(intent.getAction())) {
-                    try {
-                        Class face = Class.forName(bun.getString("face"));
-                        String method = bun.getString("method");
-                        ResultAdapter adapter = resultAdapter(bun.getInt("resultAdapter"));
+        if (receiver == null) {
+            receiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    Bundle resp = intent.getExtras();
+                    if (ACTION_RESULT.equals(intent.getAction())) {
+                        Decouplex<?> decouplex = Decouplex.find(resp.getInt("id"));
+                        decouplex.dispatchResult(DecouplexActivity.this, resp);
+                    } else if (ACTION_ERR.equals(intent.getAction())) {
+                        Bundle req = resp.getBundle("request");
+                        assert req != null;
 
-                        Method handler = responseHandler(DecouplexActivity.this.getClass(), face, method);
-                        handler.setAccessible(true); // protected methods are inaccessible by default O_o
-
-                        if (adapter == null) {
-                            handler.invoke(DecouplexActivity.this, bun.get("result"));
-                        } else {
-                            handler.invoke(DecouplexActivity.this,
-                                    arguments(handler.getParameterTypes(),
-                                            adapter.resultParams(face, method, handler, bun)));
-                        }
-                    } catch (Exception e) {
-                        throw new RuntimeException(e);
-                    }
-                } else if (ACTION_ERR.equals(intent.getAction())) {
-                    Throwable e = (Throwable) bun.get("exception");
-
-                    HashSet<Object> args = new HashSet<>();
-                    args.add(bun.get("request"));
-                    args.add(e);
-
-                    Bundle req = bun.getBundle("request");
-                    assert req != null;
-
-                    try {
-                        Method handler = errorHandler(DecouplexActivity.this.getClass(),
-                                Class.forName(req.getString("face")), req.getString("method"));
-
-                        handler.setAccessible(true);
-
-                        ErrorAdapter adapter = errorAdapter(req.getInt("errorAdapter"));
-                        if (adapter != null) {
-                            Class face = Class.forName(req.getString("face"));
-                            adapter.adaptErrorParams(face, req.getString("method"), handler, e, bun, args);
-                        }
-
-                        handler.invoke(DecouplexActivity.this, arguments(handler.getParameterTypes(), args));
-                    } catch (Exception f) {
-                        throw new RuntimeException(f);
+                        Decouplex<?> decouplex = Decouplex.find(req.getInt("id"));
+                        decouplex.dispatchError(DecouplexActivity.this, req, resp);
                     }
                 }
-            }
-        };
+            };
+        }
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_RESULT);
@@ -93,7 +55,6 @@ public abstract class DecouplexActivity extends AppCompatActivity {
         LocalBroadcastManager
                 .getInstance(this)
                 .unregisterReceiver(receiver);
-        receiver = null;
         super.onStop();
     }
 }

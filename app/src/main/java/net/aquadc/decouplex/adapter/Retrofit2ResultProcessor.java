@@ -9,7 +9,7 @@ import java.lang.reflect.Type;
 import retrofit2.Call;
 import retrofit2.Response;
 
-import static net.aquadc.decouplex.Decouplex.put;
+import static net.aquadc.decouplex.Converter.put;
 
 /**
  * Created by miha on 14.05.16.

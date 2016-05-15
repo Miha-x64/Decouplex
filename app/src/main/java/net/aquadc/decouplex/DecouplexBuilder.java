@@ -13,21 +13,11 @@ import net.aquadc.decouplex.adapter.Retrofit2ResultAdapter;
 
 import java.lang.reflect.Proxy;
 
-import static net.aquadc.decouplex.Decouplex.*;
-
 /**
  * Created by miha on 14.05.16.
  *
  */
 public class DecouplexBuilder<FACE> {
-
-    private static final Object lock = new Object();
-
-    private static int implCount;
-    private static int resultProcessorCount;
-    private static int resultAdapterCount;
-    private static int errorAdapterCount;
-    private static int errorProcessorCount;
 
     private Class face;
     private FACE impl;
@@ -101,35 +91,13 @@ public class DecouplexBuilder<FACE> {
         if (impl == null) {
             throw new NullPointerException("implementation is required");
         }
-        synchronized (lock) {
-            implCount++;
-            implementations.put(implCount, impl);
 
-            if (resultProcessor != null) {
-                resultProcessorCount++;
-                resultProcessors.put(resultProcessorCount, resultProcessor);
-            }
-            if (resultAdapter != null) {
-                resultAdapterCount++;
-                resultAdapters.put(resultAdapterCount, resultAdapter);
-            }
-            if (errorProcessor != null) {
-                errorProcessorCount++;
-                errorProcessors.put(errorProcessorCount, errorProcessor);
-            }
-            if (errorAdapter != null) {
-                errorAdapterCount++;
-                errorAdapters.put(errorAdapterCount, errorAdapter);
-            }
-            return (FACE) Proxy.newProxyInstance(
-                    face.getClassLoader(), new Class[]{face},
-                    new DecouplexRequestHandler<>(context.getApplicationContext(),
-                            face, implCount,
-                            resultProcessor == null ? 0 : resultProcessorCount,
-                            resultAdapter == null   ? 0 : resultAdapterCount,
-                            errorProcessor == null  ? 0 : errorProcessorCount,
-                            errorAdapter == null    ? 0 : resultAdapterCount));
-        }
+        return (FACE) Proxy.newProxyInstance(
+                face.getClassLoader(), new Class[]{face},
+                new Decouplex<>(context.getApplicationContext(),
+                        face, impl,
+                        resultProcessor, resultAdapter,
+                        errorProcessor, errorAdapter));
     }
 
     public static <FACE> FACE retrofit2(Context context, Class<FACE> face, FACE impl) {

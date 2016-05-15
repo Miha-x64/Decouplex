@@ -21,7 +21,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class SampleActivity extends DecouplexActivity {
 
-    private GitHubService gitHubRetrofitService =
+    private final GitHubService gitHubRetrofitService =
             new Retrofit.Builder()
                     .client(new OkHttpClient.Builder()
                             .addInterceptor(new HttpLoggingInterceptor()
@@ -31,7 +31,7 @@ public class SampleActivity extends DecouplexActivity {
                     .build()
                     .create(GitHubService.class);
 
-    private GitHubService gitHubService =
+    private final GitHubService gitHubService =
             DecouplexBuilder
                     .retrofit2(DecouplexTestApp.getInstance(),
                             GitHubService.class, gitHubRetrofitService);
