@@ -10,18 +10,17 @@ import java.util.concurrent.TimeUnit;
  */
 public class LongRunningTaskImpl implements LongRunningTask {
     @Override
-    public BigInteger calculateSomethingBig() {
+    public BigInteger calculateFactorial(BigInteger n) {
+        BigInteger fact = BigInteger.ONE;
+        while (n.compareTo(BigInteger.ONE) > 0) { // n > 1
+            fact = fact.multiply(n);
+            n = n.subtract(BigInteger.ONE);
+        }
         try {
             TimeUnit.SECONDS.sleep(5);
         } catch (InterruptedException e) {
-            //ok
+            //
         }
-        Random r = new Random();
-        return BigInteger.probablePrime(256, r)
-                .multiply(BigInteger.probablePrime(256, r))
-                .multiply(BigInteger.probablePrime(256, r))
-                .multiply(BigInteger.probablePrime(256, r))
-                .multiply(BigInteger.probablePrime(256, r))
-                .multiply(BigInteger.probablePrime(256, r));
+        return fact;
     }
 }

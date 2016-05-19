@@ -7,6 +7,7 @@ import android.os.Parcelable;
 import android.util.Log;
 import android.util.Size;
 import android.util.SizeF;
+import android.util.SparseArray;
 
 import net.aquadc.decouplex.adapter.Packer;
 
@@ -131,7 +132,14 @@ public abstract class Converter {
             }
         }
 
-        // TODO: SparseArray<Parcelable>
+        // SparseArray<Parcelable>
+        if (SparseArray.class.isInstance(value)) {
+            Class E = (Class) ((ParameterizedType) type).getActualTypeArguments()[0];
+            if (Parcelable.class.isAssignableFrom(E)) {
+                bun.putSparseParcelableArray(key, (SparseArray<? extends  Parcelable>) value);
+                return;
+            }
+        }
 
         // the last, the worst try
         if (value instanceof Serializable) {

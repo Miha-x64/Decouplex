@@ -229,4 +229,9 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
         resultHandlers = new Pair<>(h[0], h[1]);
         errorHandlers = new Pair<>(h[2], h[3]);
     }
+
+    @Override
+    public int hashCode() {
+        return id;
+    }
 }

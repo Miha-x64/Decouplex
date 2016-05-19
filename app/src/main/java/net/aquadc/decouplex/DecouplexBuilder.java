@@ -90,13 +90,10 @@ public class DecouplexBuilder<FACE, HANDLER> {
         if (context == null) {
             throw new NullPointerException("Null context given. How am I supposed to start service?");
         }
-        if (impl == null) {
-            throw new NullPointerException("implementation is required");
-        }
 
         return (FACE) Proxy.newProxyInstance(
                 face.getClassLoader(), new Class[]{face},
-                new Decouplex<>(context.getApplicationContext(),
+                new Decouplex<>(context,
                         face, impl, handler,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter));

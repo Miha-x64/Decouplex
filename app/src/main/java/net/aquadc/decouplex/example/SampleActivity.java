@@ -121,7 +121,7 @@ public class SampleActivity extends DecouplexActivity {
 
     public void longRunningTask(View v) {
         enableUi(false);
-        longRunningTask.calculateSomethingBig();
+        longRunningTask.calculateFactorial(BigInteger.valueOf(1000));
     }
 
     @OnResult(face = LongRunningTask.class)

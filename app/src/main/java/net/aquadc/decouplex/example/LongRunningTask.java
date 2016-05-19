@@ -7,5 +7,5 @@ import java.math.BigInteger;
  *
  */
 public interface LongRunningTask {
-    BigInteger calculateSomethingBig();
+    BigInteger calculateFactorial(BigInteger n);
 }
