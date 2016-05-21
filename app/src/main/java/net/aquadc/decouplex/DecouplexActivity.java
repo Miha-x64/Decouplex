@@ -1,4 +1,4 @@
-package net.aquadc.decouplex.android;
+package net.aquadc.decouplex;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -7,8 +7,6 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
-
-import net.aquadc.decouplex.Decouplex;
 
 import static net.aquadc.decouplex.Decouplex.*;
 
@@ -28,15 +26,23 @@ public abstract class DecouplexActivity extends AppCompatActivity {
                 @Override
                 public void onReceive(Context context, Intent intent) {
                     Bundle resp = intent.getExtras();
-                    if (ACTION_RESULT.equals(intent.getAction())) {
-                        Decouplex decouplex = Decouplex.find(resp.getInt("id"));
-                        decouplex.dispatchResult(DecouplexActivity.this, resp);
-                    } else if (ACTION_ERR.equals(intent.getAction())) {
-                        Bundle req = resp.getBundle("request");
-                        assert req != null;
-
-                        Decouplex decouplex = Decouplex.find(req.getInt("id"));
-                        decouplex.dispatchError(DecouplexActivity.this, req, resp);
+                    switch (intent.getAction()) {
+                        case ACTION_RESULT: {
+                            Decouplex decouplex = Decouplex.find(resp.getInt("id"));
+                            decouplex.dispatchResult(DecouplexActivity.this, resp);
+                            break;
+                        }
+                        case ACTION_RESULT_BATCH: {
+                            Decouplex.dispatchResults(DecouplexActivity.this, resp);
+                            break;
+                        }
+                        case ACTION_ERR: {
+                            Bundle req = resp.getBundle("request");
+                            assert req != null;
+                            Decouplex decouplex = Decouplex.find(req.getInt("id"));
+                            decouplex.dispatchError(DecouplexActivity.this, req, resp);
+                            break;
+                        }
                     }
                 }
             };
@@ -44,6 +50,7 @@ public abstract class DecouplexActivity extends AppCompatActivity {
 
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_RESULT);
+        filter.addAction(ACTION_RESULT_BATCH);
         filter.addAction(ACTION_ERR);
         LocalBroadcastManager
                 .getInstance(this)

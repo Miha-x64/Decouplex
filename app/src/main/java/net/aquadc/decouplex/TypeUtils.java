@@ -8,6 +8,7 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -160,6 +161,29 @@ import java.util.Set;
                         (type.isPrimitive() && wrappers.get(type).isInstance(o))) {
                     arg = o;
                     break;
+                }
+            }
+            if (arg == null) {
+                throw new IllegalArgumentException("can't find applicable argument of type " + type);
+            }
+            params[i] = arg;
+        }
+        return params;
+    }
+
+    /*package*/ static Object[] arguments(Class[] types, List<Set<Object>> args) {
+        Object[] params = new Object[types.length];
+        for (int i = 0; i < types.length; i++) {
+            Class type = types[i];
+            Object arg = null;
+            outer:
+            for (Set<Object> so : args) {
+                for (Object o : so) {
+                    if (type.isInstance(o) ||
+                            (type.isPrimitive() && wrappers.get(type).isInstance(o))) {
+                        arg = o;
+                        break outer;
+                    }
                 }
             }
             if (arg == null) {

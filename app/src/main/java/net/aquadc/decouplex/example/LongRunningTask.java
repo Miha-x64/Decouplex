@@ -8,4 +8,5 @@ import java.math.BigInteger;
  */
 public interface LongRunningTask {
     BigInteger calculateFactorial(BigInteger n);
+    void slowDown();
 }

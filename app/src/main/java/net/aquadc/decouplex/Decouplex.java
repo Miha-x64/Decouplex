@@ -3,7 +3,10 @@ package net.aquadc.decouplex;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.annotation.UiThread;
+import android.support.annotation.WorkerThread;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.TextUtils;
 import android.util.Log;
 import android.util.Pair;
 
@@ -11,12 +14,14 @@ import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
-import net.aquadc.decouplex.android.DecouplexService;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
@@ -27,13 +32,15 @@ import static net.aquadc.decouplex.Converter.put;
  * Created by miha on 14.05.16.
  *
  */
-public class Decouplex<FACE, HANDLER> implements InvocationHandler {
+class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
     /**
      * Actions to use in Intents
      */
     public static final String ACTION_EXEC = "DECOUPLEX_EXEC";
+    public static final String ACTION_EXEC_BATCH = "DECOUPLEX_EXEC_BATCH";
     public static final String ACTION_RESULT = "DECOUPLEX_RESULT";
+    public static final String ACTION_RESULT_BATCH = "DECOUPLEX_RESULT_BATCH";
     public static final String ACTION_ERR = "DECOUPLEX_ERR";
 
     /**
@@ -45,7 +52,7 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
     private static int requestSenderCount;
 
     @SuppressWarnings("unchecked")
-    public static <T, H> Decouplex<T, H> find(int id) {
+    static <T, H> Decouplex<T, H> find(int id) {
         return instances.get(id).get();
     }
 
@@ -56,7 +63,7 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
     private final Context context;
 
-    private final Class<FACE> face;
+    final Class<FACE> face; // access needed by Batch
     private final FACE impl;
 
     private final ResultProcessor resultProcessor;
@@ -91,19 +98,20 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
         instances.put(id, new WeakReference<>(this));
     }
 
+    /**
+     * Invocetion handler
+     * @param proxy     not used
+     * @param method    invoked method
+     * @param args      passed arguments
+     * @return zero (as primitive) or null pointer (as object)
+     * @throws Throwable throws nothing by itself
+     */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
 
-        Bundle data = new Bundle();
+        Bundle data = prepareRequest(method, args);
 
-        data.putInt("id", id);
-        data.putString("method", method.getName());
-
-        Class[] types = method.getParameterTypes();
-        packTypes(data, types);
-        packParameters(data, types, args);
-
-        Intent service = new Intent(context, DecouplexService.class);
+        Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
         service.setAction(ACTION_EXEC);
         service.putExtras(data);
 
@@ -114,7 +122,35 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
         return null;
     }
 
-    public void execute(Context con, Bundle req) {
+    Bundle prepareRequest(Method method, Object[] args) {
+        Bundle data = new Bundle();
+
+        data.putInt("id", id);
+        data.putString("method", method.getName());
+
+        Class[] types = method.getParameterTypes();
+        packTypes(data, types);
+        packParameters(data, types, args);
+
+        return data;
+    }
+
+    /**
+     * execute the requested action on the background
+     * @param con    context
+     * @param req    request bundle
+     */
+    @WorkerThread
+    void executeAndBroadcast(Context con, Bundle req) {
+        Pair<Boolean, Bundle> result = execute(req);
+        if (result.first) { // success
+            broadcast(con, ACTION_RESULT, result.second);
+        } else {
+            broadcast(con, ACTION_ERR, result.second);
+        }
+    }
+
+    Pair<Boolean, Bundle> execute(Bundle req) {
         String methodName = req.getString("method");
 
         Class<?>[] types;
@@ -129,33 +165,48 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
         }
 
         try {
-            Object result = method.invoke(impl, params);
-
-            Bundle resp = new Bundle();
-            resp.putInt("id", id);
-            resp.putString("method", methodName);
-
-            if (resultProcessor == null) {
-                put(resp, "result", method.getReturnType(), result);
-            } else {
-                resultProcessor.process(resp, face, method, params, result);
-            }
-
-            broadcast(con, ACTION_RESULT, resp);
+            Bundle resp = execute(methodName, method, params);
+            return new Pair<>(true, resp);
         } catch (Exception e) {
-            Bundle resp = new Bundle();
-            resp.putBundle("request", req);
-            put(resp, "exception", null, e);
-
-            if (errorProcessor!= null) {
-                errorProcessor.process(resp, face, method, params, e);
-            }
-
-            broadcast(con, ACTION_ERR, resp);
+            Bundle resp = error(req, e, method, params);
+            return new Pair<>(false, resp);
         }
     }
 
-    private static void broadcast(Context con, String action, Bundle extras) {
+    Bundle execute(String methodName, Method method, Object[] params) throws Exception {
+        Object result = method.invoke(impl, params);
+
+        Bundle resp = new Bundle();
+        resp.putInt("id", id);
+        resp.putString("method", methodName);
+
+        if (resultProcessor == null) {
+            put(resp, "result", method.getReturnType(), result);
+        } else {
+            resultProcessor.process(resp, face, method, params, result);
+        }
+
+        return resp;
+    }
+
+    Bundle error(Bundle req, Exception e, Method method, Object[] params) {
+        Bundle resp = new Bundle();
+        resp.putBundle("request", req);
+        put(resp, "exception", null, e);
+
+        if (errorProcessor != null) {
+            errorProcessor.process(resp, face, method, params, e);
+        }
+        return resp;
+    }
+
+    /**
+     * broadcast a result or an error from service
+     * @param con       context
+     * @param action    ACTION_RESULT or ACTION_ERR
+     * @param extras    extras to broadcast
+     */
+    static void broadcast(Context con, String action, Bundle extras) {
         Intent i = new Intent(action);
         i.putExtras(extras);
         LocalBroadcastManager man = LocalBroadcastManager.getInstance(con);
@@ -174,7 +225,17 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
         }
     }
 
-    public void dispatchResult(Object resultHandler, Bundle bun) {
+    /**
+     * Dispatch method invocation result to an appropriate method.
+     * First, searches in methods, targeted for a certain class;
+     * non-targeted methods then.
+     * Searches concrete methods first, wildcard-containing methods then and
+     * "*"-methods finally.
+     * @param resultHandler object whose class will be analyzed & on which the method will be invoked
+     * @param bun           result
+     */
+    @UiThread
+    void dispatchResult(Object resultHandler, Bundle bun) {
         String method = bun.getString("method");
 
         try {
@@ -197,7 +258,14 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
         }
     }
 
-    public void dispatchError(Object resultHandler, Bundle req, Bundle resp) {
+
+    /**
+     * Acts as the previous one, but for errors.
+     * @param resultHandler    object who is ready to handle result
+     * @param req              request bundle
+     * @param resp             response bundle
+     */
+    void dispatchError(Object resultHandler, Bundle req, Bundle resp) {
         Throwable e = (Throwable) resp.get("exception");
 
         String methodName = req.getString("method");
@@ -233,5 +301,46 @@ public class Decouplex<FACE, HANDLER> implements InvocationHandler {
     @Override
     public int hashCode() {
         return id;
+    }
+
+    static void dispatchResults(Object resultHandler, Bundle results) {
+
+        // FIXME: must be static weak cache with strong keys from Decouplex instances
+        Handlers[] h = Handlers.analyze(resultHandler.getClass());
+        Pair<Handlers, Handlers> resultHandlers = new Pair<>(h[0], h[1]);
+
+        List<String> methods = new ArrayList<>();
+        List<Set<Object>> resultSets = new ArrayList<>();
+        int i = 0;
+        while (true) {
+            Bundle result = results.getBundle(Integer.toString(i));
+            if (result == null)
+                break;
+
+            String method = result.getString("method");
+            methods.add(method);
+
+            Decouplex dec = Decouplex.find(result.getInt("id"));
+
+            HashSet<Object> args = new HashSet<>();
+            args.add(result.get("result"));
+            if (dec.resultAdapter != null) {
+                dec.resultAdapter.adapt(dec.face, method, null, result, args);
+            }
+            resultSets.add(args);
+
+            i++;
+        }
+
+        String method = TextUtils.join(", ", methods);
+
+        Method handler = handler(method, resultHandlers);
+        handler.setAccessible(true); // protected methods are inaccessible by default O_o
+
+        try {
+            handler.invoke(resultHandler, arguments(handler.getParameterTypes(), resultSets));
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 }

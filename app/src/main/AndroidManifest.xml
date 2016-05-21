@@ -19,7 +19,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name=".android.DecouplexService" />
+        <service android:name=".DecouplexService" />
     </application>
 
 </manifest>

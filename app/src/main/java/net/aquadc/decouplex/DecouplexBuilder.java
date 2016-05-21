@@ -104,7 +104,7 @@ public class DecouplexBuilder<FACE, HANDLER> {
                 .resultProcessor(new Retrofit2ResultProcessor())
                 .resultAdapter(new Retrofit2ResultAdapter())
                 .errorAdapter(new Retrofit2ErrorAdapter())
-                .create(context);
+                .create(context.getApplicationContext());
     }
 
 }

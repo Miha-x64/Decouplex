@@ -9,9 +9,10 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import net.aquadc.decouplex.DecouplexBatch;
 import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.R;
-import net.aquadc.decouplex.android.DecouplexActivity;
+import net.aquadc.decouplex.DecouplexActivity;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
@@ -19,6 +20,7 @@ import java.math.BigInteger;
 import java.text.NumberFormat;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Random;
 
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
@@ -47,9 +49,11 @@ public class SampleActivity extends DecouplexActivity {
             new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), getClass())
                     .create(DecouplexTestApp.getInstance());
 
+    // UI
     private TextView resultView;
     private View button0, button1, button2;
 
+    // Lifecycle
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -89,6 +93,45 @@ public class SampleActivity extends DecouplexActivity {
 
     @OnResult("listRepos")
     protected void onReposListed(List<Repo> repos) {
+        resultView.setText(formatRepos(repos));
+        enableUi(true);
+    }
+
+    @OnError
+    protected void onError(Exception e, int code, String message) {
+        Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, code + ": " + message, Toast.LENGTH_SHORT).show();
+        enableUi(true);
+    }
+
+    // Long running task
+
+    public void longRunningTask(View v) {
+        enableUi(false);
+        DecouplexBatch batch = new DecouplexBatch();
+        batch.add(gitHubService).listRepos("Miha-x64");
+        batch.add(longRunningTask).calculateFactorial(BigInteger.valueOf(new Random().nextInt(50)));
+        batch.add(longRunningTask).slowDown();
+        batch.start(this);
+    }
+
+    @OnResult("listRepos, calculateFactorial, slowDown")
+    protected void onAllFinished(List<Repo> repos, BigInteger fact) {
+        SpannableStringBuilder ssb = (SpannableStringBuilder) formatRepos(repos);
+        ssb.append("\n\n").append("random! = ").append(NumberFormat.getNumberInstance().format(fact));
+        resultView.setText(ssb);
+        enableUi(true);
+    }
+
+    // Misc
+
+    private void enableUi(boolean enable) {
+        button0.setEnabled(enable);
+        button1.setEnabled(enable);
+        button2.setEnabled(enable);
+    }
+
+    private static CharSequence formatRepos(List<Repo> repos) {
         SpannableStringBuilder sb = new SpannableStringBuilder();
         Iterator<Repo> iterator = repos.iterator();
         while (true) {
@@ -106,33 +149,6 @@ public class SampleActivity extends DecouplexActivity {
             else
                 break;
         }
-        resultView.setText(sb);
-        enableUi(true);
-    }
-
-    @OnError
-    protected void onError(Exception e, int code, String message) {
-        Toast.makeText(this, e.toString(), Toast.LENGTH_SHORT).show();
-        Toast.makeText(this, code + ": " + message, Toast.LENGTH_SHORT).show();
-        enableUi(true);
-    }
-
-    // Long running task
-
-    public void longRunningTask(View v) {
-        enableUi(false);
-        longRunningTask.calculateFactorial(BigInteger.valueOf(1000));
-    }
-
-    @OnResult(face = LongRunningTask.class)
-    protected void onResultCalculated(BigInteger result) {
-        resultView.setText(NumberFormat.getNumberInstance().format(result));
-        enableUi(true);
-    }
-
-    private void enableUi(boolean enable) {
-        button0.setEnabled(enable);
-        button1.setEnabled(enable);
-        button2.setEnabled(enable);
+        return sb;
     }
 }
