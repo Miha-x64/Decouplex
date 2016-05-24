@@ -6,23 +6,20 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/press_me0"
-        android:textAllCaps="false"
-        android:onClick="myGitHub"/>
+        android:textAllCaps="false"/>
 
     <Button
         android:id="@+id/button1"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/press_me1"
-        android:textAllCaps="false"
-        android:onClick="squareGitHub"/>
+        android:textAllCaps="false"/>
 
     <Button
         android:id="@+id/button2"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:text="@string/press_me2"
-        android:textAllCaps="false"
-        android:onClick="longRunningTask"/>
+        android:textAllCaps="false"/>
 
 </merge>

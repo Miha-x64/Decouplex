@@ -1,33 +1,35 @@
 package net.aquadc.decouplex;
 
+import android.annotation.TargetApi;
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.support.v4.content.LocalBroadcastManager;
-import android.support.v7.app.AppCompatActivity;
 
 /**
- * Created by miha on 14.05.16.
- *
+ * Created by miha on 24.05.16.
+ * similar to DecouplexActivity excluding Context operations
  */
-public abstract class DecouplexActivity extends AppCompatActivity {
+@TargetApi(11)
+public class DecouplexFragment extends Fragment {
 
     private BroadcastReceiver decouplexReceiver;
 
     @Override
-    protected void onStart() {
+    public void onStart() {
         super.onStart();
         if (decouplexReceiver == null) {
             decouplexReceiver = new DecouplexReceiver(this);
         }
 
         LocalBroadcastManager
-                .getInstance(this)
+                .getInstance(getActivity())
                 .registerReceiver(decouplexReceiver, DecouplexReceiver.createFilter());
     }
 
     @Override
-    protected void onStop() {
+    public void onStop() {
         LocalBroadcastManager
-                .getInstance(this)
+                .getInstance(getActivity())
                 .unregisterReceiver(decouplexReceiver);
         super.onStop();
     }
