@@ -138,7 +138,7 @@ public class DecouplexService extends IntentService {
             // no executor for this task — find free one
             for (Map.Entry<Decouplex, Executor> entry : executors.entrySet()) {
                 Executor val = entry.getValue();
-                if (val.isFree() && val.threads == 1) {
+                if (val.isFree() && val.threads == decouplex.threads) {
                     executors.remove(entry.getKey());
                     executors.put(decouplex, val);
                     executor = val;
@@ -148,7 +148,7 @@ public class DecouplexService extends IntentService {
         }
         if (executor == null) {
             // no free executors — add one
-            executor = new Executor(1);
+            executor = new Executor(decouplex.threads);
             executors.put(decouplex, executor);
         }
         return executor;

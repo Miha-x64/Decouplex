@@ -22,6 +22,7 @@ public class DecouplexBuilder<FACE, HANDLER> {
     private Class face;
     private FACE impl;
     private Class<HANDLER> handler;
+    private int threads = 1;
 
     private ResultProcessor resultProcessor;
     private ResultAdapter resultAdapter;
@@ -84,6 +85,14 @@ public class DecouplexBuilder<FACE, HANDLER> {
         return this;
     }
 
+    public DecouplexBuilder<FACE, HANDLER> threads(int threads) {
+        if (threads < 1) {
+            throw new IllegalArgumentException("positive thread pool required");
+        }
+        this.threads = threads;
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     public FACE create(@NonNull Context context) {
         // noinspection ConstantConditions
@@ -94,7 +103,7 @@ public class DecouplexBuilder<FACE, HANDLER> {
         return (FACE) Proxy.newProxyInstance(
                 face.getClassLoader(), new Class[]{face},
                 new Decouplex<>(context.getApplicationContext(),
-                        face, impl, handler,
+                        face, impl, handler, threads,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter));
     }
@@ -104,6 +113,7 @@ public class DecouplexBuilder<FACE, HANDLER> {
                 .resultProcessor(new Retrofit2ResultProcessor())
                 .resultAdapter(new Retrofit2ResultAdapter())
                 .errorAdapter(new Retrofit2ErrorAdapter())
+                .threads(2)
                 .create(context);
     }
 

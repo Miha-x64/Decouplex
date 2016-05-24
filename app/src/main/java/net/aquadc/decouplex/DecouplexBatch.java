@@ -100,6 +100,11 @@ public class DecouplexBatch<HANDLER> {
         Decouplex.dispatchResults(handler, results, handlers);
     }
 
+    @Override
+    public int hashCode() {
+        return id;
+    }
+
     class Request {
         final Decouplex decouplex;
         final Method method;

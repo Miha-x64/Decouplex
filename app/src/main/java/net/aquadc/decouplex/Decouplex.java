@@ -65,6 +65,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
     final Class<FACE> face; // access needed by Batch
     private final FACE impl;
+    final int threads;
 
     private final ResultProcessor resultProcessor;
     private final ResultAdapter resultAdapter;
@@ -75,7 +76,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
     private HandlerSet handlers;
 
     Decouplex(Context context,
-              Class<FACE> face, FACE impl, Class<HANDLER> handler,
+              Class<FACE> face, FACE impl, Class<HANDLER> handler, int threads,
               ResultProcessor resultProcessor, ResultAdapter resultAdapter,
               ErrorProcessor errorProcessor, ErrorAdapter errorAdapter) {
         this.context = context;
@@ -83,6 +84,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
         this.face = face;
         this.impl = impl;
         this.handler = handler;
+        this.threads = threads;
 
         this.resultProcessor = resultProcessor;
         this.resultAdapter = resultAdapter;
