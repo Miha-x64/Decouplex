@@ -27,27 +27,9 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 
 public class SampleActivity extends DecouplexActivity {
 
-    private final GitHubService gitHubService;
-
-    public SampleActivity() {
-        // configure Retrofit
-        GitHubService gitHubRetrofitService =
-                new Retrofit.Builder()
-                        .baseUrl("https://api.github.com/")
-                        .addConverterFactory(JacksonConverterFactory.create())
-                        .build()
-                        .create(GitHubService.class);
-
-        // configure Decouplex
-        gitHubService = DecouplexBuilder
-                .retrofit2(DecouplexTestApp.getInstance(),
-                        GitHubService.class, gitHubRetrofitService, getClass());
-    }
-
-    // configure another Decouplex
-    private final LongRunningTask longRunningTask =
-            new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), getClass())
-                    .create(DecouplexTestApp.getInstance());
+    // Tasks
+    private GitHubService gitHubService;
+    private LongRunningTask longRunningTask;
 
     // UI
     private TextView resultView;
@@ -56,6 +38,25 @@ public class SampleActivity extends DecouplexActivity {
     // Lifecycle
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        if (gitHubService == null) {
+            // configure Retrofit
+            GitHubService gitHubRetrofitService =
+                    new Retrofit.Builder()
+                            .baseUrl("https://api.github.com/")
+                            .addConverterFactory(JacksonConverterFactory.create())
+                            .build()
+                            .create(GitHubService.class);
+
+            // configure Decouplex
+            gitHubService = DecouplexBuilder
+                    .retrofit2(this,
+                            GitHubService.class, gitHubRetrofitService, getClass());
+
+            // configure another Decouplex
+            longRunningTask =
+                    new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), getClass())
+                            .create(this);
+        }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
 

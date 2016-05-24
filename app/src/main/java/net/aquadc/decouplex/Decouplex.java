@@ -99,7 +99,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
     }
 
     /**
-     * Invocetion handler
+     * Invocation handler
      * @param proxy     not used
      * @param method    invoked method
      * @param args      passed arguments

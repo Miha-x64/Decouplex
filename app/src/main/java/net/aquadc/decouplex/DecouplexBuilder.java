@@ -93,7 +93,7 @@ public class DecouplexBuilder<FACE, HANDLER> {
 
         return (FACE) Proxy.newProxyInstance(
                 face.getClassLoader(), new Class[]{face},
-                new Decouplex<>(context,
+                new Decouplex<>(context.getApplicationContext(),
                         face, impl, handler,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter));
@@ -104,7 +104,7 @@ public class DecouplexBuilder<FACE, HANDLER> {
                 .resultProcessor(new Retrofit2ResultProcessor())
                 .resultAdapter(new Retrofit2ResultAdapter())
                 .errorAdapter(new Retrofit2ErrorAdapter())
-                .create(context.getApplicationContext());
+                .create(context);
     }
 
 }
