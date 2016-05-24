@@ -35,12 +35,15 @@ public class DecouplexReceiver extends BroadcastReceiver {
         Bundle resp = intent.getExtras();
         switch (intent.getAction()) {
             case ACTION_RESULT: {
-                Decouplex decouplex = Decouplex.find(resp.getInt("id"));
-                decouplex.dispatchResult(resultHandler, resp);
+                Decouplex
+                        .find(resp.getInt("id"))
+                        .dispatchResult(resultHandler, resp);
                 break;
             }
             case ACTION_RESULT_BATCH: {
-                Decouplex.dispatchResults(resultHandler, resp);
+                DecouplexBatch
+                        .find(resp.getInt("id"))
+                        .dispatchResults(resultHandler, resp);
                 break;
             }
             case ACTION_ERR: {

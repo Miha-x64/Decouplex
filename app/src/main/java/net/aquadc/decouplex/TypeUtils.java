@@ -59,16 +59,17 @@ import java.util.Set;
     /**
      * find handler for the method result
      * @param methodName    the name of method that has been invoked
-     * @param handlers      many handlers, lol
+     * @param classified    handlers for certain class
+     * @param fallback      just handlers
      * @return Method to handle response
      */
-    /*package*/ static Method handler(String methodName, Pair<Handlers, Handlers> handlers) {
+    /*package*/ static Method handler(String methodName, Handlers classified, Handlers fallback) {
 
-        Method handler = handler(methodName, handlers.first);
+        Method handler = handler(methodName, classified);
         if (handler != null)
             return handler;
 
-        handler = handler(methodName, handlers.second);
+        handler = handler(methodName, fallback);
         if (handler != null)
             return handler;
 

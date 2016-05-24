@@ -30,6 +30,7 @@ public class SampleActivity extends DecouplexActivity {
     // Tasks
     private GitHubService gitHubService;
     private LongRunningTask longRunningTask;
+    private DecouplexBatch<?> batch;
 
     // UI
     private TextView resultView;
@@ -56,6 +57,8 @@ public class SampleActivity extends DecouplexActivity {
             longRunningTask =
                     new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), getClass())
                             .create(this);
+
+            batch = new DecouplexBatch<>(getClass());
         }
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_sample);
@@ -109,7 +112,6 @@ public class SampleActivity extends DecouplexActivity {
 
     public void longRunningTask(View v) {
         enableUi(false);
-        DecouplexBatch batch = new DecouplexBatch();
         batch.add(gitHubService).listRepos("Miha-x64");
         batch.add(longRunningTask).calculateFactorial(BigInteger.valueOf(new Random().nextInt(50)));
         batch.add(longRunningTask).slowDown();

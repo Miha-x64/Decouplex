@@ -1,8 +1,12 @@
 package net.aquadc.decouplex;
 
+import android.support.annotation.Nullable;
+
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
+import java.lang.ref.Reference;
+import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
@@ -13,14 +17,23 @@ import java.util.Map;
  */
 class Handlers {
 
-    Map<String, Method> immediateHandlers = new HashMap<>();
-    Map<String, Method> wildcardHandlers = new HashMap<>();
+    final Map<String, Method> immediateHandlers = new HashMap<>();
+    final Map<String, Method> wildcardHandlers = new HashMap<>();
     Method fallback;
 
     private Handlers() {
     }
 
-    static Handlers[] analyze(Class target) {
+    /**
+     * handlers management
+     */
+    private static final Map<Class, Reference<HandlerSet>> handlerSets = new HashMap<>();
+
+    static HandlerSet forClass(Class target) {
+        HandlerSet set = get(handlerSets.get(target));
+        if (set != null)
+            return set;
+
         Handlers targetedResultHandlers = new Handlers();
         Handlers resultHandlers = new Handlers();
         Handlers targetedErrorHandlers = new Handlers();
@@ -46,7 +59,9 @@ class Handlers {
             }
         }
 
-        return new Handlers[]{targetedResultHandlers, resultHandlers, targetedErrorHandlers, errorHandlers};
+        set = new HandlerSet(targetedResultHandlers, resultHandlers, targetedErrorHandlers, errorHandlers);
+        handlerSets.put(target, new WeakReference<>(set));
+        return set;
     }
 
     private static void add(Handlers handlers, Method method, String methodName) {
@@ -72,5 +87,9 @@ class Handlers {
         }
     }
 
+    @Nullable
+    private static <T> T get(@Nullable Reference<T> ref) {
+        return ref == null ? null : ref.get();
+    }
 
 }

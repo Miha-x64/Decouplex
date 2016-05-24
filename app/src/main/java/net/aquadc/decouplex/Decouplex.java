@@ -21,9 +21,11 @@ import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.aquadc.decouplex.TypeUtils.*;
 import static net.aquadc.decouplex.Converter.put;
@@ -46,10 +48,8 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
     /**
      * Instances management
      */
-    private static final
-        ConcurrentHashMap<Integer, WeakReference<Decouplex>> instances = new ConcurrentHashMap<>();
-    private static final Object counterLock = new Object();
-    private static int requestSenderCount;
+    private static final Map<Integer, WeakReference<Decouplex>> instances = new ConcurrentHashMap<>();
+    private static AtomicInteger instancesCount = new AtomicInteger();
 
     @SuppressWarnings("unchecked")
     static <T, H> Decouplex<T, H> find(int id) {
@@ -72,8 +72,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
     private final ErrorAdapter errorAdapter;
 
     private final Class<HANDLER> handler;
-    private Pair<Handlers, Handlers> resultHandlers;
-    private Pair<Handlers, Handlers> errorHandlers;
+    private HandlerSet handlers;
 
     Decouplex(Context context,
               Class<FACE> face, FACE impl, Class<HANDLER> handler,
@@ -91,10 +90,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
         this.errorProcessor = errorProcessor;
         this.errorAdapter = errorAdapter;
 
-        synchronized (counterLock) {
-            requestSenderCount++;
-            id = requestSenderCount;
-        }
+        id = instancesCount.incrementAndGet();
         instances.put(id, new WeakReference<>(this));
     }
 
@@ -239,10 +235,10 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
         String method = bun.getString("method");
 
         try {
-            if (resultHandlers == null) {
+            if (handlers == null) {
                 findHandlers();
             }
-            Method handler = handler(method, resultHandlers);
+            Method handler = handler(method, handlers.classifiedResultHandlers, handlers.resultHandlers);
             handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
             HashSet<Object> args = new HashSet<>();
@@ -265,6 +261,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
      * @param req              request bundle
      * @param resp             response bundle
      */
+    @UiThread
     void dispatchError(Object resultHandler, Bundle req, Bundle resp) {
         Throwable e = (Throwable) resp.get("exception");
 
@@ -275,10 +272,10 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
         args.add(e);
 
         try {
-            if (resultHandlers == null) {
+            if (handlers == null) {
                 findHandlers();
             }
-            Method handler = handler(methodName, errorHandlers);
+            Method handler = handler(methodName, handlers.classifiedErrorHandlers, handlers.errorHandlers);
 
             handler.setAccessible(true);
 
@@ -293,9 +290,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
     }
 
     private void findHandlers() {
-        Handlers[] h = Handlers.analyze(handler);
-        resultHandlers = new Pair<>(h[0], h[1]);
-        errorHandlers = new Pair<>(h[2], h[3]);
+        handlers = Handlers.forClass(handler);
     }
 
     @Override
@@ -303,12 +298,13 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
         return id;
     }
 
-    static void dispatchResults(Object resultHandler, Bundle results) {
-
-        // FIXME: must be static weak cache with strong keys from Decouplex instances
-        Handlers[] h = Handlers.analyze(resultHandler.getClass());
-        Pair<Handlers, Handlers> resultHandlers = new Pair<>(h[0], h[1]);
-
+    /**
+     * Dispatch results of a batch invocation
+     * @param resultHandler    an object that will receive a result
+     * @param results          a bundle with invocation results
+     */
+    @UiThread
+    static void dispatchResults(Object resultHandler, Bundle results, HandlerSet handlers) {
         List<String> methods = new ArrayList<>();
         List<Set<Object>> resultSets = new ArrayList<>();
         int i = 0;
@@ -320,7 +316,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
             String method = result.getString("method");
             methods.add(method);
 
-            Decouplex dec = Decouplex.find(result.getInt("id"));
+            Decouplex dec = find(result.getInt("id"));
 
             HashSet<Object> args = new HashSet<>();
             args.add(result.get("result"));
@@ -334,7 +330,7 @@ class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
         String method = TextUtils.join(", ", methods);
 
-        Method handler = handler(method, resultHandlers);
+        Method handler = handler(method, handlers.classifiedResultHandlers, handlers.resultHandlers);
         handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
         try {

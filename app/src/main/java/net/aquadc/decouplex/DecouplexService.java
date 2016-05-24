@@ -63,6 +63,8 @@ public class DecouplexService extends IntentService {
                 if (exec == null)
                     return; // WAT?
 
+                final int id = bun.getInt("id");
+
                 // post waiter-task to last executor
                 exec.submit(() -> {
                     int j = 0;
@@ -79,6 +81,7 @@ public class DecouplexService extends IntentService {
                             }
                             j++;
                         }
+                        resp.putInt("id", id);
                         broadcast(this, ACTION_RESULT_BATCH, resp);
                     } catch (Exception e) {
                         throw new RuntimeException(e);
