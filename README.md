@@ -2,6 +2,8 @@
 Decoupled executor — the easiest &amp; type-safe way to run code in Android service
 
 You can do like this:
+```java
+class SampleFragment extends DecouplexFragment {
 
     private GitHubService gitHubService;
 
@@ -35,3 +37,8 @@ You can do like this:
         resultView.setText(formatRepos(repos));
         enableUi(true);
     }
+    
+    // some code
+    
+}
+```
