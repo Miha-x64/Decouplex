@@ -1,7 +1,7 @@
 # Decouplex
 Decoupled executor — the easiest &amp; type-safe way to run code in Android service
 
-You can do write code this:
+You can write your code like this:
 ```java
 class SampleFragment extends DecouplexFragment {
 
@@ -39,6 +39,9 @@ class SampleFragment extends DecouplexFragment {
     }
     
     // some code
+    // setting OnClickListeners
+    // enableUi & formatRepos methods
+    // and other presenter logic
     
 }
 ```
