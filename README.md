@@ -1,7 +1,7 @@
 # Decouplex
 Decoupled executor — the easiest &amp; type-safe way to run code in Android service
 
-You can do like this:
+You can do write code this:
 ```java
 class SampleFragment extends DecouplexFragment {
 
@@ -40,5 +40,12 @@ class SampleFragment extends DecouplexFragment {
     
     // some code
     
+}
+```
+Of course, GitHubService in this example is a Retrofit-compatible interface:
+```java
+public interface GitHubService {
+    @GET("users/{user}/repos")
+    Call<List<Repo>> listRepos(@Path("user") String user);
 }
 ```
