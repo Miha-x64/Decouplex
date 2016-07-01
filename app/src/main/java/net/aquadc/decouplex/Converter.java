@@ -1,5 +1,6 @@
 package net.aquadc.decouplex;
 
+import android.os.BaseBundle;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -12,6 +13,8 @@ import android.util.SparseArray;
 import net.aquadc.decouplex.adapter.Packer;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
@@ -20,12 +23,46 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created by miha on 15.05.16.
- *
+ * Created by miha on 15.05.16
  */
 public abstract class Converter {
 
     private Converter() {
+        throw new AssertionError();
+    }
+
+    /**
+     * Internal Bundle field & method
+     */
+    private static final Field bundle_mMapField;
+    private static final Method bundle_unparcel;
+    static {
+        Field mMap;
+        Method unparcel;
+
+        try {
+            mMap = BaseBundle.class.getDeclaredField("mMap");
+            mMap.setAccessible(true);
+            unparcel = BaseBundle.class.getDeclaredMethod("unparcel");
+            unparcel.setAccessible(true);
+        } catch (NoClassDefFoundError e) {
+            try {
+                mMap = Bundle.class.getDeclaredField("mMap");
+                mMap.setAccessible(true);
+                unparcel = Bundle.class.getDeclaredMethod("unparcel");
+                unparcel.setAccessible(true);
+            } catch (Throwable t) {
+                mMap = null;
+                unparcel = null;
+                Log.e("Converter", "init bundle internals", e);
+            }
+        } catch (Throwable e) {
+            mMap = null;
+            unparcel = null;
+            Log.e("Converter", "init bundle internals", e);
+        }
+        bundle_mMapField = mMap;
+        bundle_unparcel = unparcel;
     }
 
     /**
@@ -88,6 +125,12 @@ public abstract class Converter {
     }
 
     /**
+     * This allows you to put any object into Bundle. Use judiciously, not to trick Bundle,
+     * but as an optimization & for debug purposes.
+     */
+    public static boolean ALLOW_REFLECT_PUT = true;
+
+    /**
      * Put an object to a bundle
      * @param bun bundle
      * @param key key
@@ -95,8 +138,13 @@ public abstract class Converter {
      */
     @SuppressWarnings("unchecked")
     public static void put(Bundle bun, String key, Type type, Object value) {
-        if (value == null)
+        if (value == null) {
             return;
+        }
+
+        if (ALLOW_REFLECT_PUT && reflectPut(bun, key, value)) {
+            return;
+        }
 
         // final classes that can be just found in the set
         Packer p = immediatePackers.get(value.getClass());
@@ -151,6 +199,18 @@ public abstract class Converter {
         }
 
         throw new IllegalArgumentException("unknown type: " + value.getClass());
+    }
+
+    private static boolean reflectPut(Bundle bun, String key, Object value) {
+        try {
+            bundle_unparcel.invoke(bun);
+            Map<String, Object> map = (Map) bundle_mMapField.get(bun);
+            map.put(key, value);
+            return true;
+        } catch (Exception e) {
+            Log.e("Converter", "reflectPut", e);
+            return false;
+        }
     }
 
 }
