@@ -197,7 +197,12 @@ public class SampleFragment extends DecouplexFragmentCompat implements View.OnCl
             if (repo.fork) {
                 sb.append(" (fork)");
             }
-            sb.append("\n").append(repo.description);
+
+            sb.append("\n");
+            if (repo.description != null) {
+                sb.append(repo.description);
+            }
+
             if (iterator.hasNext())
                 sb.append("\n\n");
             else

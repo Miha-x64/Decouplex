@@ -2,6 +2,7 @@ package net.aquadc.decouplex.example;
 
 import android.os.Parcel;
 import android.os.Parcelable;
+import android.support.annotation.Nullable;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,6 +23,7 @@ public class Repo implements Parcelable {
     @JsonProperty("full_name")
     public String fullName;
 
+    @Nullable
     public String description;
 
     @Override
