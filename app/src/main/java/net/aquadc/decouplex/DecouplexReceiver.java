@@ -14,7 +14,7 @@ import static net.aquadc.decouplex.Decouplex.ACTION_RESULT_BATCH;
  * Created by miha on 24.05.16.
  * BroadcastReceiver to serve an Activity or Fragment
  */
-public class DecouplexReceiver extends BroadcastReceiver {
+public final class DecouplexReceiver extends BroadcastReceiver {
 
     public static IntentFilter createFilter() {
         IntentFilter filter = new IntentFilter();

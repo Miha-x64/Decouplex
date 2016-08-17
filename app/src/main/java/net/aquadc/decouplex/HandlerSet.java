@@ -4,7 +4,7 @@ package net.aquadc.decouplex;
  * Created by miha on 24.05.16.
  *
  */
-class HandlerSet {
+final class HandlerSet {
 
     final Handlers classifiedResultHandlers;
     final Handlers resultHandlers;

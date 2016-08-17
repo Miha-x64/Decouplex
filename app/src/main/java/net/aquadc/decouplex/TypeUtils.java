@@ -2,7 +2,6 @@ package net.aquadc.decouplex;
 
 import android.os.Bundle;
 import android.support.annotation.Nullable;
-import android.util.Pair;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;

@@ -10,7 +10,7 @@ import android.support.v4.content.LocalBroadcastManager;
  * similar to DecouplexActivity excluding Context operations
  */
 @TargetApi(11)
-public class DecouplexFragment extends Fragment {
+public abstract class DecouplexFragment extends Fragment {
 
     private BroadcastReceiver decouplexReceiver;
 

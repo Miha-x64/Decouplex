@@ -25,7 +25,7 @@ import static net.aquadc.decouplex.Decouplex.broadcast;
  * Created by miha on 14.05.16.
  *
  */
-public class DecouplexService extends IntentService {
+public final class DecouplexService extends IntentService {
 
     private static final Map<Decouplex, Executor> executors = new HashMap<>();
 

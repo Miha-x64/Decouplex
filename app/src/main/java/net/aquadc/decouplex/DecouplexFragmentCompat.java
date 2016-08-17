@@ -8,7 +8,7 @@ import android.support.v4.content.LocalBroadcastManager;
  * Created by miha on 24.05.16.
  * absolutely identical to DecouplexFragment
  */
-public class DecouplexFragmentCompat extends Fragment {
+public abstract class DecouplexFragmentCompat extends Fragment {
 
     private BroadcastReceiver decouplexReceiver;
 

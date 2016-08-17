@@ -34,7 +34,7 @@ import static net.aquadc.decouplex.Converter.put;
  * Created by miha on 14.05.16.
  *
  */
-class Decouplex<FACE, HANDLER> implements InvocationHandler {
+final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
     /**
      * Actions to use in Intents

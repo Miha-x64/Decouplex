@@ -17,7 +17,7 @@ import java.lang.reflect.Proxy;
  * Created by miha on 14.05.16.
  *
  */
-public class DecouplexBuilder<FACE, HANDLER> {
+public final class DecouplexBuilder<FACE, HANDLER> {
 
     private Class face;
     private FACE impl;
@@ -110,9 +110,9 @@ public class DecouplexBuilder<FACE, HANDLER> {
 
     public static <FACE, HANDLER> FACE retrofit2(Context context, Class<FACE> face, FACE impl, Class<HANDLER> handler) {
         return new DecouplexBuilder<>(face, impl, handler)
-                .resultProcessor(new Retrofit2ResultProcessor())
-                .resultAdapter(new Retrofit2ResultAdapter())
-                .errorAdapter(new Retrofit2ErrorAdapter())
+                .resultProcessor(Retrofit2ResultProcessor.INSTANCE)
+                .resultAdapter(Retrofit2ResultAdapter.INSTANCE)
+                .errorAdapter(Retrofit2ErrorAdapter.INSTANCE)
                 .threads(2)
                 .create(context);
     }

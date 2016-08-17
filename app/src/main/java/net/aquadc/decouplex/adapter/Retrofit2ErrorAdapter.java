@@ -9,7 +9,12 @@ import java.util.Set;
  * Created by miha on 15.05.16.
  *
  */
-public class Retrofit2ErrorAdapter implements ErrorAdapter {
+public final class Retrofit2ErrorAdapter implements ErrorAdapter {
+
+    public static final Retrofit2ErrorAdapter INSTANCE = new Retrofit2ErrorAdapter();
+
+    private Retrofit2ErrorAdapter() {}
+
     @Override
     public void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params) {
         if (t instanceof HttpException) {

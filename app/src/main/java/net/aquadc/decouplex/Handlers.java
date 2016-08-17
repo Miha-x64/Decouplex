@@ -15,7 +15,7 @@ import java.util.Map;
  * Created by miha on 15.05.16.
  *
  */
-class Handlers {
+final class Handlers {
 
     final Map<String, Method> immediateHandlers = new HashMap<>();
     final Map<String, Method> wildcardHandlers = new HashMap<>();

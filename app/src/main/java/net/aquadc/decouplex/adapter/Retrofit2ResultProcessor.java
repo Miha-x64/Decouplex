@@ -15,7 +15,11 @@ import static net.aquadc.decouplex.Converter.put;
  * Created by miha on 14.05.16.
  *
  */
-public class Retrofit2ResultProcessor implements ResultProcessor {
+public final class Retrofit2ResultProcessor implements ResultProcessor {
+
+    public static final Retrofit2ResultProcessor INSTANCE = new Retrofit2ResultProcessor();
+
+    private Retrofit2ResultProcessor() {}
 
     @Override
     public void process(Bundle addFieldsHere,

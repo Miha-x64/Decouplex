@@ -20,7 +20,7 @@ import static net.aquadc.decouplex.Decouplex.ACTION_EXEC_BATCH;
  * Created by miha on 21.05.16.
  *
  */
-public class DecouplexBatch<HANDLER> {
+public final class DecouplexBatch<HANDLER> {
 
     /**
      * Instances management, like in {@see Decouplex}
