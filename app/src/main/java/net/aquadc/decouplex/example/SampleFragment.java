@@ -16,7 +16,7 @@ import android.widget.Toast;
 import net.aquadc.decouplex.DecouplexBatch;
 import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.DecouplexFragmentCompat;
-import net.aquadc.decouplex.R;
+import net.aquadc.decouplex.DecouplexRetrofit;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
@@ -117,7 +117,7 @@ public class SampleFragment extends DecouplexFragmentCompat implements View.OnCl
                             .create(GitHubService.class);
 
             // configure Decouplex
-            gitHubService = DecouplexBuilder
+            gitHubService = DecouplexRetrofit
                     .retrofit2(getActivity(),
                             GitHubService.class, gitHubRetrofitService, getClass());
 

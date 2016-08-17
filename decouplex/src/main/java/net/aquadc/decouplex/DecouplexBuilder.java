@@ -7,9 +7,6 @@ import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
-import net.aquadc.decouplex.adapter.Retrofit2ErrorAdapter;
-import net.aquadc.decouplex.adapter.Retrofit2ResultProcessor;
-import net.aquadc.decouplex.adapter.Retrofit2ResultAdapter;
 
 import java.lang.reflect.Proxy;
 
@@ -106,15 +103,6 @@ public final class DecouplexBuilder<FACE, HANDLER> {
                         face, impl, handler, threads,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter));
-    }
-
-    public static <FACE, HANDLER> FACE retrofit2(Context context, Class<FACE> face, FACE impl, Class<HANDLER> handler) {
-        return new DecouplexBuilder<>(face, impl, handler)
-                .resultProcessor(Retrofit2ResultProcessor.INSTANCE)
-                .resultAdapter(Retrofit2ResultAdapter.INSTANCE)
-                .errorAdapter(Retrofit2ErrorAdapter.INSTANCE)
-                .threads(2)
-                .create(context);
     }
 
 }

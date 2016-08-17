@@ -1,11 +1,30 @@
-apply plugin: 'com.android.application'
+apply plugin: 'com.android.library'
+apply plugin: 'me.tatarka.retrolambda'
+
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+
+    dependencies {
+        classpath 'me.tatarka:gradle-retrolambda:3.2.5'
+    }
+}
+
+repositories {
+    mavenCentral()
+}
 
 android {
     compileSdkVersion 24
     buildToolsVersion "24.0.0"
 
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
     defaultConfig {
-        applicationId "net.aquadc.decouplex.example"
         minSdkVersion 8
         targetSdkVersion 24
         versionCode 1
@@ -20,11 +39,7 @@ android {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
+    compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:24.1.1'
-    compile 'com.squareup.retrofit2:converter-jackson:2.0.2'
-    //    compile 'com.squareup.okhttp3:logging-interceptor:3.2.0'
-    compile project(':decouplex')
-    compile project(':decouplexRetrofit')
 }
