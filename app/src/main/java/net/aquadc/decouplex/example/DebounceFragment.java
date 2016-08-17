@@ -15,6 +15,8 @@ import net.aquadc.decouplex.DecouplexFragmentCompat;
 import net.aquadc.decouplex.annotation.Debounce;
 import net.aquadc.decouplex.annotation.OnResult;
 
+import java.util.concurrent.TimeUnit;
+
 /**
  * Created by miha on 17.08.16
  */
@@ -42,11 +44,11 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
     @Override public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {}
     @Override
     public void afterTextChanged(Editable editable) {
-        queryHandler.handle(editable.toString());
+        queryHandler.handle(editable.toString());   // send new text to the handler
     }
 
     @OnResult("handle")
-    void onHandleResult(String output) {
+    void onHandleResult(String output) {            // get processed result, returned by handler
         outputView.setText(output);
     }
 
@@ -54,7 +56,7 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
         @Debounce(300)
         String handle(String input);
     }
-
+    // sample handler — does nothing
     private static final QueryHandler queryHandlerImpl = new QueryHandler() {
         @Override
         public String handle(String input) {
