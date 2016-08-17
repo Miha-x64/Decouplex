@@ -33,7 +33,7 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
  * Created by miha on 24.05.16.
  *
  */
-public class SampleFragment extends DecouplexFragmentCompat implements View.OnClickListener {
+public class RetrofitFragment extends DecouplexFragmentCompat implements View.OnClickListener {
 
     /**
      * Presenter
