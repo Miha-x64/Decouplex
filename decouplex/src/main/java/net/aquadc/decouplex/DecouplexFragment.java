@@ -23,7 +23,7 @@ public abstract class DecouplexFragment extends Fragment {
 
         LocalBroadcastManager
                 .getInstance(getActivity())
-                .registerReceiver(decouplexReceiver, DecouplexReceiver.createFilter());
+                .registerReceiver(decouplexReceiver, DecouplexReceiver.createFilter(this));
     }
 
     @Override

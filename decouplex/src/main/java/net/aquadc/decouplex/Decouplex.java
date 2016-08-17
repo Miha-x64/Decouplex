@@ -14,6 +14,7 @@ import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
+import net.aquadc.decouplex.annotation.Debounce;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
@@ -126,9 +127,16 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         data.putInt("id", id);
         data.putString("method", method.getName());
 
+        Debounce debounce = method.getAnnotation(Debounce.class);
+        if (debounce != null) {
+            data.putInt("debounce", debounce.value());
+        }
+
         Class[] types = method.getParameterTypes();
         packTypes(data, types);
         packParameters(data, types, args);
+
+        data.putString("receiver", "_" + handler.getSimpleName());
 
         return data;
     }
@@ -142,9 +150,9 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     void executeAndBroadcast(Context con, Bundle req) {
         Pair<Boolean, Bundle> result = execute(req);
         if (result.first) { // success
-            broadcast(con, ACTION_RESULT, result.second);
+            broadcast(con, ACTION_RESULT + req.get("receiver"), result.second);
         } else {
-            broadcast(con, ACTION_ERR, result.second);
+            broadcast(con, ACTION_ERR + req.get("receiver"), result.second);
         }
     }
 

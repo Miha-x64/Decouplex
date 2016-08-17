@@ -5,7 +5,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
 import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentPagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.os.Bundle;
@@ -40,7 +39,7 @@ public final class MainActivity extends AppCompatActivity {
         setSupportActionBar(toolbar);
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
-        mSectionsPagerAdapter = new SectionsPagerAdapter(getSupportFragmentManager());
+        mSectionsPagerAdapter = new SectionsPagerAdapter();
 
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
@@ -80,8 +79,8 @@ public final class MainActivity extends AppCompatActivity {
      */
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
-        public SectionsPagerAdapter(FragmentManager fm) {
-            super(fm);
+        public SectionsPagerAdapter() {
+            super(getSupportFragmentManager());
         }
 
         @Override
@@ -89,8 +88,8 @@ public final class MainActivity extends AppCompatActivity {
             switch (position) {
                 case 0:
                     return new RetrofitFragment();
-//                case 1:
-//                    return new AnotherFragment();
+                case 1:
+                    return new DebounceFragment();
                 default:
                     throw new NoSuchElementException();
             }
@@ -98,7 +97,7 @@ public final class MainActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            return 1;
+            return 2;
         }
 
         @Override
@@ -106,8 +105,8 @@ public final class MainActivity extends AppCompatActivity {
             switch (position) {
                 case 0:
                     return getString(R.string.tab_retrofit);
-//                case 1:
-//                    return "In progress";
+                case 1:
+                    return getString(R.string.tab_debounce);
                 default:
                     throw new NoSuchElementException();
             }

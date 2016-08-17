@@ -44,7 +44,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_sample, container, false);
+        View view = inflater.inflate(R.layout.fragment_retrofit, container, false);
 
         resultView = (TextView) view.findViewById(R.id.result);
 

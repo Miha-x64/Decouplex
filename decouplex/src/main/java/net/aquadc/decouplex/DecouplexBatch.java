@@ -85,6 +85,7 @@ public final class DecouplexBatch<HANDLER> {
             i++;
         }
         batch.putInt("id", id);
+        batch.putString("receiver", "_" + handlerClass.getSimpleName());
 
         Intent service = new Intent(context.getApplicationContext(), DecouplexService.class); // TODO: different executors
         service.setAction(ACTION_EXEC_BATCH);

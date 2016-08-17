@@ -21,7 +21,7 @@ public abstract class DecouplexActivity extends AppCompatActivity {
 
         LocalBroadcastManager
                 .getInstance(this)
-                .registerReceiver(decouplexReceiver, DecouplexReceiver.createFilter());
+                .registerReceiver(decouplexReceiver, DecouplexReceiver.createFilter(this));
     }
 
     @Override
