@@ -129,7 +129,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
         Debounce debounce = method.getAnnotation(Debounce.class);
         if (debounce != null) {
-            data.putInt("debounce", debounce.value());
+            data.putInt("debounce", (int) debounce.unit().toMillis(debounce.value()));
         }
 
         Class[] types = method.getParameterTypes();
