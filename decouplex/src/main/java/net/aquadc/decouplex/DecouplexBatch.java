@@ -22,6 +22,8 @@ import static net.aquadc.decouplex.Decouplex.ACTION_EXEC_BATCH;
  */
 public final class DecouplexBatch<HANDLER> {
 
+    private static final Object[] EMPTY_ARRAY = new Object[0];
+
     /**
      * Instances management, like in {@see Decouplex}
      */
@@ -63,7 +65,7 @@ public final class DecouplexBatch<HANDLER> {
                 requests = new ArrayList<>();
                 requestsLoc.set(requests);
             }
-            requests.add(new Request(d, method, args));
+            requests.add(new Request(d, method, args == null ? EMPTY_ARRAY : args));
 
             if (method.getReturnType().isPrimitive())
                 return 0;
