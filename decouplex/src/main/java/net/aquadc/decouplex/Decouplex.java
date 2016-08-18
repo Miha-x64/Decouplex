@@ -173,7 +173,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         try {
             Bundle resp = execute(methodName, method, params);
             return new Pair<>(true, resp);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Bundle resp = error(req, e, method, params);
             return new Pair<>(false, resp);
         }
@@ -195,7 +195,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         return resp;
     }
 
-    Bundle error(Bundle req, Exception e, Method method, Object[] params) {
+    Bundle error(Bundle req, Throwable e, Method method, Object[] params) {
         Bundle resp = new Bundle();
         resp.putBundle("request", req);
         put(resp, "exception", null, e);
