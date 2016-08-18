@@ -52,3 +52,7 @@ public interface GitHubService {
     Call<List<Repo>> listRepos(@Path("user") String user);
 }
 ```
+You need to add service in manifest:
+```xml
+<service android:name="net.aquadc.decouplex.DecouplexService" />
+```
