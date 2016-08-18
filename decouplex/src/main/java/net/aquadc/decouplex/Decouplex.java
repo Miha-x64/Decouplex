@@ -134,7 +134,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
         Class[] types = method.getParameterTypes();
         packTypes(data, types);
-        packParameters(data, types, args);
+        packParameters(data, types, args == null ? EMPTY_ARRAY : args);
 
         data.putString("receiver", "_" + handler.getSimpleName());
 
