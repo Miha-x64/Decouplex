@@ -10,5 +10,5 @@ import java.util.Set;
  * {@see ResultAdapter}
  */
 public interface ErrorAdapter {
-    void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params);
+    void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params) throws Throwable;
 }
