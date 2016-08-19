@@ -1,10 +1,13 @@
 package net.aquadc.decouplex;
 
+import android.annotation.SuppressLint;
+import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 
 import static net.aquadc.decouplex.Decouplex.ACTION_ERR;
 import static net.aquadc.decouplex.Decouplex.ACTION_RESULT;
@@ -16,26 +19,19 @@ import static net.aquadc.decouplex.Decouplex.ACTION_RESULT_BATCH;
  */
 public final class DecouplexReceiver extends BroadcastReceiver {
 
-    public static IntentFilter createFilter(Object receiver) {
-        IntentFilter filter = new IntentFilter();
-        String id = "_" + receiver.getClass().getSimpleName();
-        filter.addAction(ACTION_RESULT + id);
-        filter.addAction(ACTION_RESULT_BATCH + id);
-        filter.addAction(ACTION_ERR + id);
-        return filter;
-    }
-
     private final Object resultHandler;
     private final String actionResult;
     private final String actionResultBatch;
     private final String actionError;
+    private final IntentFilter filter;
 
     public DecouplexReceiver(Object resultHandler) {
         this.resultHandler = resultHandler;
         String id = "_" + resultHandler.getClass().getSimpleName();
         actionResult = ACTION_RESULT + id;
         actionResultBatch = ACTION_RESULT_BATCH + id;
-        actionError= ACTION_ERR + id;
+        actionError = ACTION_ERR + id;
+        filter = createFilter();
     }
 
     @Override
@@ -56,6 +52,36 @@ public final class DecouplexReceiver extends BroadcastReceiver {
             Decouplex decouplex = Decouplex.find(req.getInt("id"));
             decouplex.dispatchError(resultHandler, req, resp);
         }
+    }
+
+    public void register() {
+        Context con = getContext(resultHandler);
+        LocalBroadcastManager.getInstance(con).registerReceiver(this, filter);
+    }
+
+    public void unregister() {
+        Context con = getContext(resultHandler);
+        LocalBroadcastManager.getInstance(con).unregisterReceiver(this);
+    }
+
+    private IntentFilter createFilter() {
+        IntentFilter filter = new IntentFilter();
+        String id = "_" + resultHandler.getClass().getSimpleName();
+        filter.addAction(ACTION_RESULT + id);
+        filter.addAction(ACTION_RESULT_BATCH + id);
+        filter.addAction(ACTION_ERR + id);
+        return filter;
+    }
+
+    @SuppressLint("NewApi")
+    private static Context getContext(Object o) {
+        if (o instanceof Context)
+            return (Context) o;
+        else if (o instanceof android.support.v4.app.Fragment)
+            return ((android.support.v4.app.Fragment) o).getActivity();
+        else if (o instanceof android.app.Fragment)
+            return ((Fragment) o).getActivity();
+        throw new IllegalStateException("can't get context from " + o);
     }
 
 }

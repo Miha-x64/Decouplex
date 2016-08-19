@@ -52,3 +52,27 @@ public interface GitHubService {
     Call<List<Repo>> listRepos(@Path("user") String user);
 }
 ```
+When not extending DecouplexActivity or DecouplexFragment,
+you can register & unregister BroadcastReceiver wherever you need:
+in onCreate/onDestroy, onStart/onStop or onResume/onPause.
+
+```java
+class MyClass extends Fragment or Activity {
+
+    private DecouplexReceiver decouplexReceiver;
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (decouplexReceiver == null)
+            decouplexReceiver = new DecouplexReceiver(this);
+        decouplexReceiver.register();
+    }
+
+    @Override
+    protected void onStop() {
+        decouplexReceiver.unregister();
+        super.onStop();
+    }
+}
+```

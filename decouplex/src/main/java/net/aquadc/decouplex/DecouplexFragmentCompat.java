@@ -1,8 +1,6 @@
 package net.aquadc.decouplex;
 
-import android.content.BroadcastReceiver;
 import android.support.v4.app.Fragment;
-import android.support.v4.content.LocalBroadcastManager;
 
 /**
  * Created by miha on 24.05.16.
@@ -10,25 +8,19 @@ import android.support.v4.content.LocalBroadcastManager;
  */
 public abstract class DecouplexFragmentCompat extends Fragment {
 
-    private BroadcastReceiver decouplexReceiver;
+    private DecouplexReceiver decouplexReceiver;
 
     @Override
     public void onStart() {
         super.onStart();
-        if (decouplexReceiver == null) {
+        if (decouplexReceiver == null)
             decouplexReceiver = new DecouplexReceiver(this);
-        }
-
-        LocalBroadcastManager
-                .getInstance(getActivity())
-                .registerReceiver(decouplexReceiver, DecouplexReceiver.createFilter(this));
+        decouplexReceiver.register();
     }
 
     @Override
     public void onStop() {
-        LocalBroadcastManager
-                .getInstance(getActivity())
-                .unregisterReceiver(decouplexReceiver);
+        decouplexReceiver.unregister();
         super.onStop();
     }
 
