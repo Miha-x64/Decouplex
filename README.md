@@ -52,6 +52,14 @@ public interface GitHubService {
     Call<List<Repo>> listRepos(@Path("user") String user);
 }
 ```
+
+
+You need to add service in manifest:
+```xml
+<service android:name="net.aquadc.decouplex.DecouplexService" />
+```
+
+
 When not extending DecouplexActivity or DecouplexFragment,
 you can register & unregister BroadcastReceiver wherever you need:
 in onCreate/onDestroy, onStart/onStop or onResume/onPause.

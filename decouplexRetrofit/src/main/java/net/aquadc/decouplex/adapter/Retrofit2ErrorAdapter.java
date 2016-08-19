@@ -2,6 +2,7 @@ package net.aquadc.decouplex.adapter;
 
 import android.os.Bundle;
 
+import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Set;
 
@@ -16,13 +17,15 @@ public final class Retrofit2ErrorAdapter implements ErrorAdapter {
     private Retrofit2ErrorAdapter() {}
 
     @Override
-    public void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params) {
+    public void adapt(Class face, String methodName, Method handler, Throwable t, Bundle response, Set<Object> params) throws Throwable {
         if (t instanceof HttpException) {
             params.add(((HttpException) t).code);
             params.add(((HttpException) t).message);
-        } else {
+        } else if (t instanceof IOException) {
             params.add(0);
-            params.add("");
+            params.add(t.getMessage());
+        } else {
+            throw t;
         }
     }
 }

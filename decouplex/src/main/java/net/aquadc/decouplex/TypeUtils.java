@@ -17,6 +17,8 @@ import java.util.Set;
  */
 /*package*/ abstract class TypeUtils {
 
+    /*package*/ static final Object[] EMPTY_ARRAY = new Object[0];
+
     /**
      * wrapper-classes for primitives
      */

@@ -134,7 +134,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
         Class[] types = method.getParameterTypes();
         packTypes(data, types);
-        packParameters(data, types, args);
+        packParameters(data, types, args == null ? EMPTY_ARRAY : args);
 
         data.putString("receiver", "_" + handler.getSimpleName());
 
@@ -173,7 +173,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         try {
             Bundle resp = execute(methodName, method, params);
             return new Pair<>(true, resp);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             Bundle resp = error(req, e, method, params);
             return new Pair<>(false, resp);
         }
@@ -195,7 +195,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         return resp;
     }
 
-    Bundle error(Bundle req, Exception e, Method method, Object[] params) {
+    Bundle error(Bundle req, Throwable e, Method method, Object[] params) {
         Bundle resp = new Bundle();
         resp.putBundle("request", req);
         put(resp, "exception", null, e);
@@ -294,7 +294,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
             }
 
             handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
-        } catch (Exception f) {
+        } catch (Throwable f) {
             throw new RuntimeException(f);
         }
     }

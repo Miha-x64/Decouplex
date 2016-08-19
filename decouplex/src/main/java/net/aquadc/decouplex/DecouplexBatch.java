@@ -15,14 +15,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.aquadc.decouplex.Decouplex.ACTION_EXEC_BATCH;
+import static net.aquadc.decouplex.TypeUtils.*;
 
 /**
  * Created by miha on 21.05.16.
  *
  */
 public final class DecouplexBatch<HANDLER> {
-
-    private static final Object[] EMPTY_ARRAY = new Object[0];
 
     /**
      * Instances management, like in {@see Decouplex}

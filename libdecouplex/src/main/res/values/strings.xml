@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Decouplex</string>
+    <string name="press_me0">List my GitHub repositories</string>
+    <string name="press_me1">List SquareUp GitHub repositories</string>
+    <string name="press_me2">Trigger long-running action (you\u00A0may\u00A0rotate\u00A0screen)</string>
+    <string name="read_me">Just tap somewhere.</string>
+</resources>
