@@ -196,7 +196,7 @@ import java.util.Set;
         return params;
     }
 
-    private static Class<?> classForName(String name) {
+    /*package*/ static Class<?> classForName(String name) {
         Class cls = primitives.get(name);
         if (cls != null)
             return cls;

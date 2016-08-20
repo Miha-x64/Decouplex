@@ -124,48 +124,51 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     Bundle prepareRequest(Method method, Object[] args) {
         Bundle data = new Bundle();
 
-        data.putInt("id", id);
-        data.putString("method", method.getName());
+        DecouplexRequest request = new DecouplexRequest(id, method, args);
+
+//        data.putInt("id", id);
+//        data.putString("method", method.getName());
 
         Debounce debounce = method.getAnnotation(Debounce.class);
         if (debounce != null) {
             data.putInt("debounce", (int) debounce.unit().toMillis(debounce.value()));
         }
 
-        Class[] types = method.getParameterTypes();
-        packTypes(data, types);
-        packParameters(data, types, args == null ? EMPTY_ARRAY : args);
+//        Class[] types = method.getParameterTypes();
+//        packTypes(data, types);
+//        packParameters(data, types, args == null ? EMPTY_ARRAY : args);
 
         data.putString("receiver", "_" + handler.getSimpleName());
+
+        data.putParcelable("request", request);
 
         return data;
     }
 
     /**
      * execute the requested action on the background
-     * @param con    context
-     * @param req    request bundle
+     * @param con       context
+     * @param request   request
+     * @param bReceiver broadcastReceiver action suffix
      */
     @WorkerThread
-    void executeAndBroadcast(Context con, Bundle req) {
-        Pair<Boolean, Bundle> result = execute(req);
+    void executeAndBroadcast(Context con, DecouplexRequest request, String bReceiver) {
+        Pair<Boolean, Bundle> result = execute(request);
         if (result.first) { // success
-            broadcast(con, ACTION_RESULT + req.get("receiver"), result.second);
+            broadcast(con, ACTION_RESULT + bReceiver, result.second);
         } else {
-            broadcast(con, ACTION_ERR + req.get("receiver"), result.second);
+            broadcast(con, ACTION_ERR + bReceiver, result.second);
         }
     }
 
-    Pair<Boolean, Bundle> execute(Bundle req) {
-        String methodName = req.getString("method");
+    Pair<Boolean, Bundle> execute(DecouplexRequest req) {
+        String methodName = req.methodName;
 
-        Class<?>[] types;
+        Class<?>[] types = req.parameterTypes();
         Method method;
-        Object[] params;
+        Object[] params = req.parameters();
         try {
-            types = unpackTypes(req);
             method = face.getDeclaredMethod(methodName, types);
-            params = unpackParameters(req, types.length);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -195,9 +198,9 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         return resp;
     }
 
-    Bundle error(Bundle req, Throwable e, Method method, Object[] params) {
+    Bundle error(DecouplexRequest req, Throwable e, Method method, Object[] params) {
         Bundle resp = new Bundle();
-        resp.putBundle("request", req);
+        resp.putParcelable("request", req);
         put(resp, "exception", null, e);
 
         if (errorProcessor != null) {
@@ -272,10 +275,8 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
      * @param resp             response bundle
      */
     @UiThread
-    void dispatchError(Object resultHandler, Bundle req, Bundle resp) {
+    void dispatchError(Object resultHandler, DecouplexRequest req, Bundle resp) {
         Throwable e = (Throwable) resp.get("exception");
-
-        String methodName = req.getString("method");
 
         HashSet<Object> args = new HashSet<>();
 //        args.add(resp);
@@ -285,12 +286,12 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
             if (handlers == null) {
                 findHandlers();
             }
-            Method handler = handler(methodName, handlers.classifiedErrorHandlers, handlers.errorHandlers);
+            Method handler = handler(req.methodName, handlers.classifiedErrorHandlers, handlers.errorHandlers);
 
             handler.setAccessible(true);
 
             if (errorAdapter != null) {
-                errorAdapter.adapt(face, methodName, handler, e, resp, args);
+                errorAdapter.adapt(face, req.methodName, handler, e, resp, args);
             }
 
             handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));

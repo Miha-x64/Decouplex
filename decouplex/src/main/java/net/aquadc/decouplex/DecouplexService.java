@@ -40,22 +40,24 @@ public final class DecouplexService extends IntentService {
     protected void onHandleIntent(Intent intent) {
         switch (intent.getAction()) {
             case ACTION_EXEC: {
-                Bundle req = intent.getExtras();
-                int id = req.getInt("id");
+                Bundle extras = intent.getExtras();
+                DecouplexRequest request = extras.getParcelable("request");
+                int id = request.decouplexId;
                 Decouplex decouplex = Decouplex.find(id);
 
-                int debounce = req.getInt("debounce", -1);
+                int debounce = extras.getInt("debounce", -1);
+                String bReceiver = extras.getString("receiver");
                 if (debounce == -1) {
-                    findExecutorFor(decouplex).submit(() -> decouplex.executeAndBroadcast(this, req));
+                    findExecutorFor(decouplex).submit(() -> decouplex.executeAndBroadcast(this, request, bReceiver));
                 } else {
-                    String methodId = id + "|" + req.getString("receiver") + "|" + req.getString("method");
+                    String methodId = id + "|" + bReceiver + "|" + request.methodName;
                     Future<?> old = debounced.get(methodId);
                     if (old != null) {
                         old.cancel(false);
                     }
 
                     ScheduledFuture<?> f =
-                            findExecutorFor(decouplex).schedule(() -> decouplex.executeAndBroadcast(this, req), debounce, methodId);
+                            findExecutorFor(decouplex).schedule(() -> decouplex.executeAndBroadcast(this, request, bReceiver), debounce, methodId);
                     debounced.put(methodId, f);
                 }
                 break;
@@ -70,10 +72,11 @@ public final class DecouplexService extends IntentService {
                     if (req == null)
                         break;
 
-                    Decouplex decouplex = Decouplex.find(req.getInt("id"));
+                    DecouplexRequest request = req.getParcelable("request");
+                    Decouplex decouplex = Decouplex.find(request.decouplexId);
 
                     exec = findExecutorFor(decouplex);
-                    futures.add(exec.submit(() -> decouplex.execute(req)));
+                    futures.add(exec.submit(() -> decouplex.execute(request)));
                     i++;
                 }
 

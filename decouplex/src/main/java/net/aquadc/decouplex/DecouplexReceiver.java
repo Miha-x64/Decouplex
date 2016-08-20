@@ -51,9 +51,8 @@ public final class DecouplexReceiver extends BroadcastReceiver {
                     .find(resp.getInt("id"))
                     .dispatchResults(resultHandler, resp);
         } else if (actionError.equals(action)) {
-            Bundle req = resp.getBundle("request");
-            assert req != null;
-            Decouplex decouplex = Decouplex.find(req.getInt("id"));
+            DecouplexRequest req = resp.getParcelable("request");
+            Decouplex decouplex = Decouplex.find(req.decouplexId);
             decouplex.dispatchError(resultHandler, req, resp);
         }
     }
