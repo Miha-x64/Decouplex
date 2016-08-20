@@ -145,14 +145,6 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
         }
     }
 
-    @Override
-    public void onDetach() {
-        gitHubService = null;
-        longRunningTask = null;
-        batch = null;
-        super.onDetach();
-    }
-
     // Retrofit
 
     public void myGitHub() {
