@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
+import android.support.design.widget.Snackbar;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
@@ -11,11 +12,11 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import net.aquadc.decouplex.DecouplexBatch;
 import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.DecouplexFragmentCompat;
+import net.aquadc.decouplex.DecouplexRequest;
 import net.aquadc.decouplex.DecouplexRetrofit;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
@@ -157,9 +158,22 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
     }
 
     @OnError
-    protected void onError(Exception e, int code, String message) {
-        Toast.makeText(getActivity(), e.toString(), Toast.LENGTH_SHORT).show();
-        Toast.makeText(getActivity(), code + ": " + message, Toast.LENGTH_SHORT).show();
+    protected void onError(final DecouplexRequest failedRequest, Exception e, int code, String message) {
+        if (code == 0) {
+            // network problem
+            Snackbar.make(button0, e.toString(), Snackbar.LENGTH_LONG)
+                    .setAction(R.string.snackbar_action_retry, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            enableUi(false);
+                            failedRequest.retry(getActivity());
+                        }
+                    })
+                    .show();
+        } else {
+            // http error
+            Snackbar.make(button0, code + ": " + message, Snackbar.LENGTH_LONG).show();
+        }
         enableUi(true);
     }
 

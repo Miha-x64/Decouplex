@@ -1,5 +1,7 @@
 package net.aquadc.decouplex;
 
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.Parcel;
 import android.os.Parcelable;
@@ -34,6 +36,10 @@ public final class DecouplexRequest implements Parcelable {
         this.parameterTypes = parameterTypes;
         this.parameters = parameters;
         this.receiverActionSuffix = receiverActionSuffix;
+    }
+
+    public void retry(Context context) {
+        startExecService(context, prepare(null));
     }
 
     Bundle prepare(@Nullable Debounce debounce) {
@@ -84,6 +90,16 @@ public final class DecouplexRequest implements Parcelable {
             parameters[i] = bundled.get(Integer.toString(i));
         }
         return parameters;
+    }
+
+    static void startExecService(Context context, Bundle extras) {
+        Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
+        service.setAction(Decouplex.ACTION_EXEC);
+        service.putExtras(extras);
+
+        if (context.startService(service) == null) {
+            throw new IllegalStateException("Did you forget to declare DecouplexService in your manifest?");
+        }
     }
 
     @Override

@@ -107,21 +107,11 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-        startExecService(context, prepareRequest(method, args));
+        DecouplexRequest.startExecService(context, prepareRequest(method, args));
 
         if (method.getReturnType().isPrimitive())
             return 0;
         return null;
-    }
-
-    static void startExecService(Context context, Bundle extras) {
-        Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
-        service.setAction(ACTION_EXEC);
-        service.putExtras(extras);
-
-        if (context.startService(service) == null) {
-            throw new IllegalStateException("Did you forget to declare DecouplexService in your manifest?");
-        }
     }
 
     Bundle prepareRequest(Method method, Object[] args) {
@@ -264,7 +254,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         Throwable e = (Throwable) resp.get("exception");
 
         HashSet<Object> args = new HashSet<>();
-//        args.add(resp);
+        args.add(req);
         args.add(e);
 
         try {
