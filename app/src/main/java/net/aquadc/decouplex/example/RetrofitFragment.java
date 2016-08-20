@@ -128,8 +128,8 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
             // configure Decouplex
             gitHubService = DecouplexRetrofit
                     .retrofit2Builder(GitHubService.class, gitHubRetrofitService, getClass())
-                    .fallbackErrorHandler((r, e) -> {
-                        Snackbar.make(button0, r + " -> " + e, Snackbar.LENGTH_LONG).show();
+                    .fallbackErrorHandler((request, error) -> {
+                        Snackbar.make(button0, request + ": " + error, Snackbar.LENGTH_LONG).show();
                         enableUi(true);
                     })
                     .create(getActivity());
