@@ -12,7 +12,6 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import net.aquadc.decouplex.DecouplexBatch;
 import net.aquadc.decouplex.DecouplexBuilder;
@@ -164,8 +163,8 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
     }
 
     // You can write just @OnError.
-    // This method is @OnError("listRepos") intentionally:
-    // fail()'s errors will trigger fallback error handler.
+    // This method intentionally handles only listRepos' error:
+    // fail()'s errors will trigger fallback error handler, not this one.
     @OnError("listRepos")
     protected void onError(final DecouplexRequest failedRequest, Exception e) {
         if (e instanceof HttpException) {
