@@ -129,6 +129,8 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
             gitHubService = DecouplexRetrofit
                     .retrofit2Builder(GitHubService.class, gitHubRetrofitService, getClass())
                     .fallbackErrorHandler((request, error) -> {
+                        // Triggered when there's no appropriate error handling method.
+                        // In this case — when fail() gets called.
                         Snackbar.make(button0, request + ": " + error, Snackbar.LENGTH_LONG).show();
                         enableUi(true);
                     })
