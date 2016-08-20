@@ -90,7 +90,9 @@ public final class DecouplexBatch<HANDLER> {
         service.setAction(ACTION_EXEC_BATCH);
         service.putExtras(batch);
 
-        context.startService(service);
+        if (context.startService(service) == null) {
+            throw new IllegalStateException("Did you forget to declare DecouplexService in your manifest?");
+        }
         requests.clear();
     }
 

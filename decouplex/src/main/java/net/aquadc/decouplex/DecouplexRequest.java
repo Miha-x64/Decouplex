@@ -5,8 +5,9 @@ import android.os.Parcel;
 import android.os.Parcelable;
 import android.support.annotation.Nullable;
 
+import net.aquadc.decouplex.annotation.Debounce;
+
 import java.lang.reflect.Method;
-import java.lang.reflect.Type;
 
 /**
  * Created by miha on 20.08.16
@@ -17,19 +18,36 @@ public final class DecouplexRequest implements Parcelable {
     final String methodName;
     final String[] parameterTypes;
     final Bundle parameters;
+    final String receiverActionSuffix;
 
-    DecouplexRequest(int decouplexId, Method method, @Nullable Object[] args) {
+    DecouplexRequest(int decouplexId, Method method, @Nullable Object[] args, String receiverActionSuffix) {
         this.decouplexId = decouplexId;
         this.methodName = method.getName();
         this.parameterTypes = parameterTypesOf(method);
         this.parameters = asBundle(method, args == null ? TypeUtils.EMPTY_ARRAY : args);
+        this.receiverActionSuffix = receiverActionSuffix;
     }
 
-    DecouplexRequest(int decouplexId, String methodName, String[] parameterTypes, Bundle parameters) {
+    DecouplexRequest(int decouplexId, String methodName, String[] parameterTypes, Bundle parameters, String receiverActionSuffix) {
         this.decouplexId = decouplexId;
         this.methodName = methodName;
         this.parameterTypes = parameterTypes;
         this.parameters = parameters;
+        this.receiverActionSuffix = receiverActionSuffix;
+    }
+
+    Bundle prepare(@Nullable Debounce debounce) {
+        Bundle data = new Bundle(debounce == null ? 2 : 3);
+
+        if (debounce != null) {
+            data.putInt("debounce", (int) debounce.unit().toMillis(debounce.value()));
+        }
+
+        data.putString("receiver", receiverActionSuffix);
+
+        data.putParcelable("request", this);
+
+        return data;
     }
 
     private static String[] parameterTypesOf(Method method) {
@@ -79,6 +97,7 @@ public final class DecouplexRequest implements Parcelable {
         parcel.writeString(methodName);
         parcel.writeStringArray(parameterTypes);
         parcel.writeBundle(parameters);
+        parcel.writeString(receiverActionSuffix);
     }
 
     public static final Parcelable.Creator<DecouplexRequest> CREATOR = new Parcelable.Creator<DecouplexRequest>() {
@@ -88,7 +107,8 @@ public final class DecouplexRequest implements Parcelable {
             String methodName = parcel.readString();
             String[] parameterTypes = parcel.createStringArray();
             Bundle parameters = parcel.readBundle(getClass().getClassLoader());
-            return new DecouplexRequest(decouplexId, methodName, parameterTypes, parameters);
+            String receiverActionSuffix = parcel.readString();
+            return new DecouplexRequest(decouplexId, methodName, parameterTypes, parameters, receiverActionSuffix);
         }
 
         @Override

@@ -107,42 +107,27 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
      */
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-
-        Bundle data = prepareRequest(method, args);
-
-        Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
-        service.setAction(ACTION_EXEC);
-        service.putExtras(data);
-
-        context.startService(service);
+        startExecService(context, prepareRequest(method, args));
 
         if (method.getReturnType().isPrimitive())
             return 0;
         return null;
     }
 
-    Bundle prepareRequest(Method method, Object[] args) {
-        Bundle data = new Bundle();
+    static void startExecService(Context context, Bundle extras) {
+        Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
+        service.setAction(ACTION_EXEC);
+        service.putExtras(extras);
 
-        DecouplexRequest request = new DecouplexRequest(id, method, args);
-
-//        data.putInt("id", id);
-//        data.putString("method", method.getName());
-
-        Debounce debounce = method.getAnnotation(Debounce.class);
-        if (debounce != null) {
-            data.putInt("debounce", (int) debounce.unit().toMillis(debounce.value()));
+        if (context.startService(service) == null) {
+            throw new IllegalStateException("Did you forget to declare DecouplexService in your manifest?");
         }
+    }
 
-//        Class[] types = method.getParameterTypes();
-//        packTypes(data, types);
-//        packParameters(data, types, args == null ? EMPTY_ARRAY : args);
+    Bundle prepareRequest(Method method, Object[] args) {
+        DecouplexRequest request = new DecouplexRequest(id, method, args, "_" + handler.getSimpleName());
 
-        data.putString("receiver", "_" + handler.getSimpleName());
-
-        data.putParcelable("request", request);
-
-        return data;
+        return request.prepare(method.getAnnotation(Debounce.class));
     }
 
     /**
