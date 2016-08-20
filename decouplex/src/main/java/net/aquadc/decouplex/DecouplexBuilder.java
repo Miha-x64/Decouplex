@@ -2,6 +2,7 @@ package net.aquadc.decouplex;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.util.Pair;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
@@ -26,6 +27,8 @@ public final class DecouplexBuilder<FACE, HANDLER> {
 
     private ErrorProcessor errorProcessor;
     private ErrorAdapter errorAdapter;
+
+    private Decouplex.ErrorHandler fallbackErrorHandler;
 
     public DecouplexBuilder(@NonNull Class<FACE> face, @NonNull FACE impl, @NonNull Class<HANDLER> handler) {
         // noinspection ConstantConditions
@@ -90,6 +93,17 @@ public final class DecouplexBuilder<FACE, HANDLER> {
         return this;
     }
 
+    public DecouplexBuilder<FACE, HANDLER> fallbackErrorHandler(Decouplex.ErrorHandler handler) {
+        // noinspection ConstantConditions
+        if (handler == null) {
+            throw new NullPointerException("attempt to set null ErrorHandler");
+        }
+
+        this.fallbackErrorHandler = handler;
+
+        return this;
+    }
+
     @SuppressWarnings("unchecked")
     public FACE create(@NonNull Context context) {
         // noinspection ConstantConditions
@@ -102,7 +116,8 @@ public final class DecouplexBuilder<FACE, HANDLER> {
                 new Decouplex<>(context.getApplicationContext(),
                         face, impl, handler, threads,
                         resultProcessor, resultAdapter,
-                        errorProcessor, errorAdapter));
+                        errorProcessor, errorAdapter,
+                        fallbackErrorHandler));
     }
 
 }

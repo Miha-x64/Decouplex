@@ -12,12 +12,14 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import net.aquadc.decouplex.DecouplexBatch;
 import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.DecouplexFragmentCompat;
 import net.aquadc.decouplex.DecouplexRequest;
 import net.aquadc.decouplex.DecouplexRetrofit;
+import net.aquadc.decouplex.adapter.HttpException;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
 
@@ -31,8 +33,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 /**
- * Created by miha on 24.05.16.
- *
+ * Created by miha on 24.05.16
  */
 public class RetrofitFragment extends DecouplexFragmentCompat implements View.OnClickListener {
 
@@ -41,7 +42,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
      */
 
     private TextView resultView;
-    private View button0, button1, button2;
+    private View button0, button1, button2, button3;
 
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -52,10 +53,12 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
         button0 = view.findViewById(R.id.button0);
         button1 = view.findViewById(R.id.button1);
         button2 = view.findViewById(R.id.button2);
+        button3 = view.findViewById(R.id.button3);
 
         button0.setOnClickListener(this);
         button1.setOnClickListener(this);
         button2.setOnClickListener(this);
+        button3.setOnClickListener(this);
 
         return view;
     }
@@ -88,6 +91,10 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
             case R.id.button2:
                 longRunningTask();
                 break;
+
+            case R.id.button3:
+                fail();
+                break;
         }
     }
 
@@ -95,6 +102,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
         button0.setEnabled(enable);
         button1.setEnabled(enable);
         button2.setEnabled(enable);
+        button3.setEnabled(enable);
     }
 
     /**
@@ -119,8 +127,12 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
 
             // configure Decouplex
             gitHubService = DecouplexRetrofit
-                    .retrofit2(getActivity(),
-                            GitHubService.class, gitHubRetrofitService, getClass());
+                    .retrofit2Builder(GitHubService.class, gitHubRetrofitService, getClass())
+                    .fallbackErrorHandler((r, e) -> {
+                        Snackbar.make(button0, r + " -> " + e, Snackbar.LENGTH_LONG).show();
+                        enableUi(true);
+                    })
+                    .create(getActivity());
 
             // configure another Decouplex
             longRunningTask =
@@ -157,19 +169,23 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
         enableUi(true);
     }
 
-    @OnError
-    protected void onError(final DecouplexRequest failedRequest, Exception e, int code, String message) {
-        if (code == 0) {
+    // You can write just @OnError.
+    // This method is @OnError("listRepos") intentionally:
+    // fail()'s errors will trigger fallback error handler.
+    @OnError("listRepos")
+    protected void onError(final DecouplexRequest failedRequest, Exception e) {
+        if (e instanceof HttpException) {
+            // http error
+            HttpException http = (HttpException) e;
+            Snackbar.make(button0, http.code + ": " + http.message, Snackbar.LENGTH_LONG).show();
+        } else {
             // network problem
             Snackbar.make(button0, e.toString(), Snackbar.LENGTH_LONG)
                     .setAction(R.string.snackbar_action_retry, v -> {
-                            enableUi(false);
-                            failedRequest.retry(getActivity());
-                        })
+                        enableUi(false);
+                        failedRequest.retry(getActivity());
+                    })
                     .show();
-        } else {
-            // http error
-            Snackbar.make(button0, code + ": " + message, Snackbar.LENGTH_LONG).show();
         }
         enableUi(true);
     }
@@ -190,6 +206,13 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
         ssb.append("\n\n").append("random! = ").append(NumberFormat.getNumberInstance().format(fact));
         resultView.setText(ssb);
         enableUi(true);
+    }
+
+    // Fail
+
+    public void fail() {
+        // will trigger fallback error handler
+        gitHubService.fail();
     }
 
     /**

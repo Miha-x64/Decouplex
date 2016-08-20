@@ -73,13 +73,16 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     private final ErrorProcessor errorProcessor;
     private final ErrorAdapter errorAdapter;
 
+    private final ErrorHandler fallbackErrorHandler;
+
     private final Class<HANDLER> handler;
     private HandlerSet handlers;
 
     Decouplex(Context context,
               Class<FACE> face, FACE impl, Class<HANDLER> handler, int threads,
               ResultProcessor resultProcessor, ResultAdapter resultAdapter,
-              ErrorProcessor errorProcessor, ErrorAdapter errorAdapter) {
+              ErrorProcessor errorProcessor, ErrorAdapter errorAdapter,
+              ErrorHandler fallbackErrorHandler) {
         this.context = context;
 
         this.face = face;
@@ -92,6 +95,8 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
         this.errorProcessor = errorProcessor;
         this.errorAdapter = errorAdapter;
+
+        this.fallbackErrorHandler = fallbackErrorHandler;
 
         id = instancesCount.incrementAndGet();
         instances.put(id, new WeakReference<>(this));
@@ -251,11 +256,11 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
      */
     @UiThread
     void dispatchError(Object resultHandler, DecouplexRequest req, Bundle resp) {
-        Throwable e = (Throwable) resp.get("exception");
+        Throwable executionFail = (Throwable) resp.get("exception");
 
         HashSet<Object> args = new HashSet<>();
         args.add(req);
-        args.add(e);
+        args.add(executionFail);
 
         try {
             if (handlers == null) {
@@ -266,12 +271,19 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
             handler.setAccessible(true);
 
             if (errorAdapter != null) {
-                errorAdapter.adapt(face, req.methodName, handler, e, resp, args);
+                errorAdapter.adapt(face, req.methodName, handler, executionFail, resp, args);
             }
 
             handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
-        } catch (Throwable f) {
-            throw new RuntimeException(f);
+        } catch (Throwable deliveryFail) {
+            if (fallbackErrorHandler == null) {
+                if (deliveryFail instanceof RuntimeException) {
+                    throw (RuntimeException) deliveryFail; // don't create a new one
+                }
+                throw new RuntimeException(deliveryFail);
+            } else {
+                fallbackErrorHandler.onError(req, executionFail);
+            }
         }
     }
 
@@ -324,5 +336,10 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+    }
+
+    @FunctionalInterface
+    public interface ErrorHandler {
+        void onError(DecouplexRequest request, Throwable throwable);
     }
 }

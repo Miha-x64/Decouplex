@@ -42,6 +42,17 @@ public final class DecouplexRequest implements Parcelable {
         startExecService(context, prepare(null));
     }
 
+    @Override
+    public String toString() {
+        StringBuilder bu = new StringBuilder("DecouplexRequest:");
+        bu.append(methodName).append("(");
+        for (Object param : parameters()) {
+            bu.append(param);
+        }
+        bu.append(")");
+        return bu.toString();
+    }
+
     Bundle prepare(@Nullable Debounce debounce) {
         Bundle data = new Bundle(debounce == null ? 2 : 3);
 

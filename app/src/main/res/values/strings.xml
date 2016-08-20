@@ -6,6 +6,7 @@
     <string name="press_me0">List my GitHub repositories</string>
     <string name="press_me1">List SquareUp GitHub repositories</string>
     <string name="press_me2">Trigger long-running action (you\u00A0may\u00A0rotate\u00A0screen)</string>
+    <string name="press_me3">Just fail</string>
     <string name="read_me">Just tap somewhere.</string>
     <string name="snackbar_action_retry">Retry</string>
 
