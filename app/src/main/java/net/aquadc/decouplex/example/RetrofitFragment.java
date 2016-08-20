@@ -162,13 +162,10 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
         if (code == 0) {
             // network problem
             Snackbar.make(button0, e.toString(), Snackbar.LENGTH_LONG)
-                    .setAction(R.string.snackbar_action_retry, new View.OnClickListener() {
-                        @Override
-                        public void onClick(View view) {
+                    .setAction(R.string.snackbar_action_retry, v -> {
                             enableUi(false);
                             failedRequest.retry(getActivity());
-                        }
-                    })
+                        })
                     .show();
         } else {
             // http error
