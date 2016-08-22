@@ -27,10 +27,20 @@ android {
         versionCode 1
         versionName "1.0"
     }
+    signingConfigs {
+        releaseConfig {
+            storeFile file('/home/miha/.android/debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            debuggable false
+            signingConfig signingConfigs.releaseConfig
         }
     }
 }

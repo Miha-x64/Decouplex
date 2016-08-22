@@ -14,16 +14,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Repo implements Parcelable {
 
+    @JsonProperty("id")
     public int id;
 
+    @JsonProperty("fork")
     public boolean fork;
 
+    @JsonProperty("name")
     public String name;
 
     @JsonProperty("full_name")
     public String fullName;
 
-    @Nullable
+    @Nullable @JsonProperty("description")
     public String description;
 
     @Override

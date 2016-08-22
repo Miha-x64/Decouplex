@@ -78,7 +78,7 @@ public final class DecouplexRequest implements Parcelable {
     }
 
     private static Bundle asBundle(Method method, Object[] args) {
-        Bundle bun = new Bundle(args.length); // todo capacity
+        Bundle bun = new Bundle(args.length);
         TypeUtils.packParameters(bun, method.getParameterTypes(), args);
         return bun;
     }
