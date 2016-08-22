@@ -8,6 +8,7 @@ import net.aquadc.decouplex.annotation.OnResult;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +41,8 @@ final class Handlers {
         Handlers errorHandlers = new Handlers();
 
         for (Method method : target.getDeclaredMethods()) {
+            System.out.println(method);
+            System.out.println(Arrays.toString(method.getAnnotations()));
             OnResult onResult = method.getAnnotation(OnResult.class);
             if (onResult != null) {
                 if (onResult.face() == null) {
@@ -92,4 +95,11 @@ final class Handlers {
         return ref == null ? null : ref.get();
     }
 
+    @Override
+    public String toString() {
+        return "Handlers(" +
+                "immediate: " + immediateHandlers + ", " +
+                "wildcard: " + wildcardHandlers + ", " +
+                "fallback: " + fallback + ")";
+    }
 }

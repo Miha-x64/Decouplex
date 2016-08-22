@@ -18,4 +18,12 @@ final class HandlerSet {
         this.classifiedErrorHandlers = classifiedErrorHandlers;
         this.errorHandlers = errorHandlers;
     }
+
+    @Override
+    public String toString() {
+        return "HandlerSet(classifiedResultHandlers: " + classifiedResultHandlers + ", " +
+                "resultHandlers: " + resultHandlers + ", " +
+                "classifiedErrorHandlers: " + classifiedErrorHandlers + ", " +
+                "errorHandlers: " + errorHandlers + ")";
+    }
 }

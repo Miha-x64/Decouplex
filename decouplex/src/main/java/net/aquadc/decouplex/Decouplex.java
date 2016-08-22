@@ -243,6 +243,9 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
             handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
         } catch (Exception e) {
+            if (e instanceof RuntimeException) {
+                throw (RuntimeException) e;
+            }
             throw new RuntimeException(e);
         }
     }
