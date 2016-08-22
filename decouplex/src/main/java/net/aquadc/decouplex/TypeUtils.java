@@ -62,9 +62,10 @@ import java.util.Set;
      * @param methodName    the name of method that has been invoked
      * @param classified    handlers for certain class
      * @param fallback      just handlers
+     * @param handlerClass  class where handlers coming from
      * @return Method to handle response
      */
-    /*package*/ static Method handler(String methodName, Handlers classified, Handlers fallback) {
+    /*package*/ static Method handler(String methodName, Handlers classified, Handlers fallback, Class handlerClass) {
 
         Method handler = handler(methodName, classified);
         if (handler != null)
@@ -74,7 +75,15 @@ import java.util.Set;
         if (handler != null)
             return handler;
 
-        throw new RuntimeException("handler for " + methodName + " not found");
+        if (handlerClass == null) {
+            throw new RuntimeException("handler for result of method '" + methodName + "' not found.");
+        } else {
+            throw new RuntimeException("handler for result of method '" + methodName + "' not found in class " + handlerClass.getSimpleName() + ".");
+        }
+    }
+    /*package*/ static Method handler(String methodName, Handlers classified, Handlers fallback) {
+        // todo: rm legacy method
+        return handler(methodName, classified, fallback, null);
     }
 
     @Nullable

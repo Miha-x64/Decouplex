@@ -157,7 +157,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
     }
 
     @OnResult("listRepos")
-    protected void onReposListed(List<Repo> repos) {
+    void onReposListed(List<Repo> repos) {
         resultView.setText(formatRepos(repos));
         enableUi(true);
     }
@@ -166,7 +166,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
     // This method intentionally handles only listRepos' error:
     // fail()'s errors will trigger fallback error handler, not this one.
     @OnError("listRepos")
-    protected void onError(final DecouplexRequest failedRequest, Exception e) {
+    void onError(final DecouplexRequest failedRequest, Exception e) {
         if (e instanceof HttpException) {
             // http error
             HttpException http = (HttpException) e;
@@ -194,7 +194,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
     }
 
     @OnResult("listRepos, calculateFactorial, slowDown")
-    protected void onAllFinished(List<Repo> repos, BigInteger fact) {
+    void onAllFinished(List<Repo> repos, BigInteger fact) {
         SpannableStringBuilder ssb = (SpannableStringBuilder) formatRepos(repos);
         ssb.append("\n\n").append("random! = ").append(NumberFormat.getNumberInstance().format(fact));
         resultView.setText(ssb);
@@ -203,7 +203,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
 
     // Fail
 
-    public void fail() {
+    private void fail() {
         // will trigger fallback error handler
         gitHubService.fail();
     }

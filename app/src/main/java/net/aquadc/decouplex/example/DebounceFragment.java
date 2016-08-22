@@ -15,8 +15,6 @@ import net.aquadc.decouplex.DecouplexFragmentCompat;
 import net.aquadc.decouplex.annotation.Debounce;
 import net.aquadc.decouplex.annotation.OnResult;
 
-import java.util.concurrent.TimeUnit;
-
 /**
  * Created by miha on 17.08.16
  */
@@ -25,8 +23,7 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
     private TextView outputView;
     private QueryHandler queryHandler;
 
-    @Nullable
-    @Override
+    @Nullable @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         queryHandler = new DecouplexBuilder<>(QueryHandler.class, queryHandlerImpl, getClass()).create(getActivity());
         return inflater.inflate(R.layout.fragment_debounce, container, false);
@@ -34,8 +31,6 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
         ((EditText) view.findViewById(R.id.debounce_input)).addTextChangedListener(this);
         outputView = (TextView) view.findViewById(R.id.debounce_output);
     }
@@ -47,7 +42,10 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
         queryHandler.handle(editable.toString());   // send new text to the handler
     }
 
-    @OnResult("handle")
+    // sample handler — returns unmodified string
+    private static final QueryHandler queryHandlerImpl = input -> input;
+
+    @OnResult("handle") // show handled text
     void onHandleResult(String output) {            // get processed result, returned by handler
         outputView.setText(output);
     }
@@ -56,11 +54,4 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
         @Debounce(300)
         String handle(String input);
     }
-    // sample handler — does nothing
-    private static final QueryHandler queryHandlerImpl = new QueryHandler() {
-        @Override
-        public String handle(String input) {
-            return input;
-        }
-    };
 }

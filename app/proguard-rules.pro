@@ -136,7 +136,9 @@
 # Keep annotated handler methods
 -keepclasseswithmembers class * {
   @net.aquadc.decouplex.annotation.OnResult <methods>;
-  @net.aquadc.decouplex.annotation.OnError <methods>;
+}
+-keepclasseswithmembers class * {
+    @net.aquadc.decouplex.annotation.OnError <methods>;
 }
 
 # debug only

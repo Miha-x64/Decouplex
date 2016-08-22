@@ -231,7 +231,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
             if (handlers == null) {
                 findHandlers();
             }
-            Method handler = handler(method, handlers.classifiedResultHandlers, handlers.resultHandlers);
+            Method handler = handler(method, handlers.classifiedResultHandlers, handlers.resultHandlers, this.handler);
             handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
             HashSet<Object> args = new HashSet<>();
