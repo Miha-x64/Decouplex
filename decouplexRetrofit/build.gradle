@@ -5,8 +5,8 @@ ext {
     bintrayName = 'Decouplex-Retrofit'
 
     publishedGroupId = 'net.aquadc.decouplex'
-    libraryName = 'DecouplexRetrofit'
-    artifact = 'decouplex-retrofit'
+    libraryName = 'decouplexRetrofit'
+    artifact = 'decouplexRetrofit'
 
     libraryDescription = 'Adapters for Decouplex to work with Retrofit'
 

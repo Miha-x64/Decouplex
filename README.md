@@ -1,6 +1,10 @@
 # Decouplex
 Decoupled executor — the easiest &amp; type-safe way to run code in Android service
 
+[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion) — just Decouplex
+
+[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion) — DecouplexRetrofit
+
 You can write your code like this:
 ```java
 class SampleFragment extends DecouplexFragment {
