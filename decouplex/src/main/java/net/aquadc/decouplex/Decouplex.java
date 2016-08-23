@@ -241,7 +241,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
                 resultAdapter.adapt(face, method, handler, bun, args);
             }
 
-            handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
+            handler.invoke(resultHandler, arguments(handler, args));
         } catch (Exception e) {
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
@@ -277,7 +277,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
                 errorAdapter.adapt(face, req.methodName, handler, executionFail, resp, args);
             }
 
-            handler.invoke(resultHandler, arguments(handler.getParameterTypes(), args));
+            handler.invoke(resultHandler, arguments(handler, args));
         } catch (Throwable deliveryFail) {
             if (fallbackErrorHandler == null) {
                 if (deliveryFail instanceof RuntimeException) {

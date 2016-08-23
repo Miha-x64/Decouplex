@@ -162,7 +162,8 @@ import java.util.Set;
         return types.toArray(classes);
     }
 
-    /*package*/ static Object[] arguments(Class[] types, Set<Object> args) {
+    /*package*/ static Object[] arguments(Method handlerMethod, Set<Object> args) {
+        Class[] types = handlerMethod.getParameterTypes();
         Object[] params = new Object[types.length];
         for (int i = 0; i < types.length; i++) {
             Class type = types[i];
@@ -175,7 +176,7 @@ import java.util.Set;
                 }
             }
             if (arg == null) {
-                throw new IllegalArgumentException("can't find applicable argument of type " + type);
+                throw new IllegalArgumentException("can't find applicable argument of type '" + type + "' for method '" + handlerMethod + "'");
             }
             params[i] = arg;
         }
