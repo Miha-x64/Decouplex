@@ -1,9 +1,9 @@
 # Decouplex
 Decoupled executor — the easiest &amp; type-safe way to run code in Android service
 
-[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion) — just Decouplex
+[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion) — just Decouplex: `compile 'net.aquadc.decouplex:decouplex:0.0.1'`
 
-[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion) — DecouplexRetrofit
+[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion) — DecouplexRetrofit: `compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.1'`
 
 You can write your code like this:
 ```java
