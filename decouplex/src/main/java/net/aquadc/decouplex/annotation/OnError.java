@@ -7,7 +7,7 @@ import java.lang.annotation.Target;
 
 /**
  * Created by miha on 14.05.16.3
- * for docs {@see OnResult}
+ * for docs see OnResult
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)

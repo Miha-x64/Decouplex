@@ -1,4 +1,29 @@
 apply plugin: 'com.android.library'
+
+ext {
+    bintrayRepo = 'maven'
+    bintrayName = 'Decouplex'
+
+    publishedGroupId = 'net.aquadc.decouplex'
+    libraryName = 'Decouplex'
+    artifact = 'decouplex'
+
+    libraryDescription = 'Decoupled executor — the easiest & type-safe way to run code in Android service'
+
+    siteUrl = 'https://github.com/Miha-x64/Decouplex'
+    gitUrl = 'https://github.com/Miha-x64/Decouplex.git'
+
+    libraryVersion = '0.0.1'
+
+    developerId = 'miha-x64'
+    developerName = 'Mikhail'
+    developerEmail = 'silizium@ok.de'
+
+    licenseName = 'LGPL 3.0'
+    licenseUrl = 'https://www.gnu.org/licenses/lgpl-3.0.html'
+    allLicenses = ["LGPL 3.0"]
+}
+
 apply plugin: 'me.tatarka.retrolambda'
 
 buildscript {
@@ -40,3 +65,6 @@ dependencies {
     testCompile 'org.robolectric:robolectric:3.1.2'
     compile 'com.android.support:appcompat-v7:24.0.0' // newer AppCompat requires minSdk 9
 }
+
+//apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
+//apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'

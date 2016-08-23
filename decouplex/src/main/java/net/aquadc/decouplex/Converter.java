@@ -126,7 +126,7 @@ public abstract class Converter {
 
     /**
      * This allows you to put any object into Bundle. Use judiciously, not to trick Bundle,
-     * but as an optimization & for debug purposes.
+     * but as an optimization and for debug purposes.
      */
     public static boolean ALLOW_REFLECT_PUT = true;
 
