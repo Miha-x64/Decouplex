@@ -8,6 +8,7 @@ import android.os.Parcelable;
 import android.support.annotation.Nullable;
 
 import net.aquadc.decouplex.annotation.Debounce;
+import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.lang.reflect.Method;
 
@@ -21,21 +22,24 @@ public final class DecouplexRequest implements Parcelable {
     final String[] parameterTypes;
     final Bundle parameters;
     final String receiverActionSuffix;
+    final DeliveryStrategy deliveryStrategy;
 
-    DecouplexRequest(int decouplexId, Method method, @Nullable Object[] args, String receiverActionSuffix) {
+    DecouplexRequest(int decouplexId, Method method, @Nullable Object[] args, String receiverActionSuffix, DeliveryStrategy deliveryStrategy) {
         this.decouplexId = decouplexId;
         this.methodName = method.getName();
         this.parameterTypes = parameterTypesOf(method);
         this.parameters = asBundle(method, args == null ? TypeUtils.EMPTY_ARRAY : args);
         this.receiverActionSuffix = receiverActionSuffix;
+        this.deliveryStrategy = deliveryStrategy;
     }
 
-    DecouplexRequest(int decouplexId, String methodName, String[] parameterTypes, Bundle parameters, String receiverActionSuffix) {
+    DecouplexRequest(int decouplexId, String methodName, String[] parameterTypes, Bundle parameters, String receiverActionSuffix, DeliveryStrategy deliveryStrategy) {
         this.decouplexId = decouplexId;
         this.methodName = methodName;
         this.parameterTypes = parameterTypes;
         this.parameters = parameters;
         this.receiverActionSuffix = receiverActionSuffix;
+        this.deliveryStrategy = deliveryStrategy;
     }
 
     public void retry(Context context) {
@@ -62,7 +66,8 @@ public final class DecouplexRequest implements Parcelable {
 
         data.putString("receiver", receiverActionSuffix);
 
-        data.putParcelable("request", this);
+        data.putParcelable("request", deliveryStrategy.createRequest(this));
+        data.putString("deliveryStrategy", deliveryStrategy.name());
 
         return data;
     }
@@ -125,6 +130,7 @@ public final class DecouplexRequest implements Parcelable {
         parcel.writeStringArray(parameterTypes);
         parcel.writeBundle(parameters);
         parcel.writeString(receiverActionSuffix);
+        parcel.writeString(deliveryStrategy.name());
     }
 
     public static final Parcelable.Creator<DecouplexRequest> CREATOR = new Parcelable.Creator<DecouplexRequest>() {
@@ -135,7 +141,8 @@ public final class DecouplexRequest implements Parcelable {
             String[] parameterTypes = parcel.createStringArray();
             Bundle parameters = parcel.readBundle(getClass().getClassLoader());
             String receiverActionSuffix = parcel.readString();
-            return new DecouplexRequest(decouplexId, methodName, parameterTypes, parameters, receiverActionSuffix);
+            DeliveryStrategy deliveryStrategy = DeliveryStrategy.valueOf(parcel.readString());
+            return new DecouplexRequest(decouplexId, methodName, parameterTypes, parameters, receiverActionSuffix, deliveryStrategy);
         }
 
         @Override

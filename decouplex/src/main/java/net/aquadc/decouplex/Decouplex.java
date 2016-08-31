@@ -15,6 +15,7 @@ import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.annotation.Debounce;
+import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
@@ -75,6 +76,8 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
 
     private final ErrorHandler fallbackErrorHandler;
 
+    private final DeliveryStrategy deliveryStrategy;
+
     private final Class<HANDLER> handler;
     private HandlerSet handlers;
 
@@ -82,7 +85,8 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
               Class<FACE> face, FACE impl, Class<HANDLER> handler, int threads,
               ResultProcessor resultProcessor, ResultAdapter resultAdapter,
               ErrorProcessor errorProcessor, ErrorAdapter errorAdapter,
-              ErrorHandler fallbackErrorHandler) {
+              ErrorHandler fallbackErrorHandler,
+              DeliveryStrategy deliveryStrategy) {
         this.context = context;
 
         this.face = face;
@@ -97,6 +101,8 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         this.errorAdapter = errorAdapter;
 
         this.fallbackErrorHandler = fallbackErrorHandler;
+
+        this.deliveryStrategy = deliveryStrategy;
 
         id = instancesCount.incrementAndGet();
         instances.put(id, new WeakReference<>(this));
@@ -120,7 +126,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     }
 
     Bundle prepareRequest(Method method, Object[] args) {
-        DecouplexRequest request = new DecouplexRequest(id, method, args, "_" + handler.getSimpleName());
+        DecouplexRequest request = new DecouplexRequest(id, method, args, "_" + handler.getSimpleName(), deliveryStrategy);
 
         return request.prepare(method.getAnnotation(Debounce.class));
     }

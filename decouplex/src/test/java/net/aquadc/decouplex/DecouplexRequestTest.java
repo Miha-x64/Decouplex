@@ -1,6 +1,9 @@
 package net.aquadc.decouplex;
 
 import android.os.Parcel;
+import android.os.ParcelUuid;
+
+import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -25,7 +28,7 @@ public class DecouplexRequestTest {
                 new Class[]{TestInterface.class},
                 (proxy, method, args) -> {
 
-                    DecouplexRequest request = new DecouplexRequest(100500, method, args);
+                    DecouplexRequest request = new DecouplexRequest(100500, method, args, "suffix", DeliveryStrategy.LOCAL);
                     Parcel p = Parcel.obtain();
                     p.writeParcelable(request, 0);
 
@@ -40,6 +43,8 @@ public class DecouplexRequestTest {
                     Class[] types = method.getParameterTypes();
                     assertArrayEquals(types == null ? TypeUtils.EMPTY_ARRAY : types, unparceled.parameterTypes());
                     assertArrayEquals(args == null ? TypeUtils.EMPTY_ARRAY : args, unparceled.parameters());
+                    assertEquals(unparceled.receiverActionSuffix, "suffix");
+                    assertEquals(unparceled.deliveryStrategy, DeliveryStrategy.LOCAL);
 
                     return null;
                 });

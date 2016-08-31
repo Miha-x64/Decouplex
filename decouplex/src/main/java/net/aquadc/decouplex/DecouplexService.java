@@ -6,6 +6,8 @@ import android.os.Bundle;
 import android.util.Log;
 import android.util.Pair;
 
+import net.aquadc.decouplex.delivery.DeliveryStrategy;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -41,9 +43,13 @@ public final class DecouplexService extends IntentService {
         switch (intent.getAction()) {
             case ACTION_EXEC: {
                 Bundle extras = intent.getExtras();
-                DecouplexRequest request = extras.getParcelable("request");
+                DeliveryStrategy deliveryStrategy = DeliveryStrategy.valueOf(extras.getString("deliveryStrategy"));
+                DecouplexRequest request = deliveryStrategy.obtainRequest(extras.getParcelable("request"));
                 int id = request.decouplexId;
                 Decouplex decouplex = Decouplex.find(id);
+                if (decouplex == null) {
+                    throw new NullPointerException("Internal delivery error.");
+                }
 
                 int debounce = extras.getInt("debounce", -1);
                 String bReceiver = extras.getString("receiver");
@@ -72,7 +78,8 @@ public final class DecouplexService extends IntentService {
                     if (req == null)
                         break;
 
-                    DecouplexRequest request = req.getParcelable("request");
+                    DeliveryStrategy deliveryStrategy = DeliveryStrategy.valueOf(req.getString("deliveryStrategy"));
+                    DecouplexRequest request = deliveryStrategy.obtainRequest(req.getParcelable("request"));
                     Decouplex decouplex = Decouplex.find(request.decouplexId);
 
                     exec = findExecutorFor(decouplex);

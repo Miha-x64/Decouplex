@@ -23,7 +23,11 @@ public final class Retrofit2ErrorAdapter implements ErrorAdapter {
             params.add(((HttpException) t).message);
         } else if (t instanceof IOException) {
             params.add(0);
-            params.add(t.getMessage());
+            String message = t.getMessage();
+            if (message == null) {
+                message = "";
+            }
+            params.add(message);
         } else {
             throw t;
         }

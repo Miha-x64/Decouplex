@@ -2,12 +2,12 @@ package net.aquadc.decouplex;
 
 import android.content.Context;
 import android.support.annotation.NonNull;
-import android.util.Pair;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
+import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.lang.reflect.Proxy;
 
@@ -117,7 +117,8 @@ public final class DecouplexBuilder<FACE, HANDLER> {
                         face, impl, handler, threads,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter,
-                        fallbackErrorHandler));
+                        fallbackErrorHandler,
+                        DeliveryStrategy.LOCAL)); // todo
     }
 
 }
