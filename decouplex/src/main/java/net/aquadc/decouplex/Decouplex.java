@@ -1,14 +1,9 @@
 package net.aquadc.decouplex;
 
 import android.content.Context;
-import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.UiThread;
-import android.support.annotation.WorkerThread;
-import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
-import android.util.Log;
-import android.util.Pair;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
@@ -17,20 +12,15 @@ import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.annotation.Debounce;
 import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
-import java.lang.ref.WeakReference;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static net.aquadc.decouplex.TypeUtils.*;
-import static net.aquadc.decouplex.Converter.put;
 
 /**
  * Created by miha on 14.05.16.
@@ -50,13 +40,7 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     /**
      * Instances management
      */
-    private static final Map<Integer, WeakReference<Decouplex>> instances = new ConcurrentHashMap<>();
     private static AtomicInteger instancesCount = new AtomicInteger();
-
-    @SuppressWarnings("unchecked")
-    static <T, H> Decouplex<T, H> find(int id) {
-        return instances.get(id).get();
-    }
 
     /**
      * instance
@@ -105,7 +89,6 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         this.deliveryStrategy = deliveryStrategy;
 
         id = instancesCount.incrementAndGet();
-        instances.put(id, new WeakReference<>(this));
     }
 
     /**
@@ -126,98 +109,14 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     }
 
     Bundle prepareRequest(Method method, Object[] args) {
-        DecouplexRequest request = new DecouplexRequest(id, method, args, "_" + handler.getSimpleName(), deliveryStrategy);
+        DecouplexRequest request =
+                new DecouplexRequest(this, threads,
+                        face, impl, method, args,
+                        "_" + handler.getSimpleName(),
+                        deliveryStrategy,
+                        resultProcessor, errorProcessor);
 
         return request.prepare(method.getAnnotation(Debounce.class));
-    }
-
-    /**
-     * execute the requested action on the background
-     * @param con       context
-     * @param request   request
-     * @param bReceiver broadcastReceiver action suffix
-     */
-    @WorkerThread
-    void executeAndBroadcast(Context con, DecouplexRequest request, String bReceiver) {
-        Pair<Boolean, Bundle> result = execute(request);
-        if (result.first) { // success
-            broadcast(con, ACTION_RESULT + bReceiver, result.second);
-        } else {
-            broadcast(con, ACTION_ERR + bReceiver, result.second);
-        }
-    }
-
-    Pair<Boolean, Bundle> execute(DecouplexRequest req) {
-        String methodName = req.methodName;
-
-        Class<?>[] types = req.parameterTypes();
-        Method method;
-        Object[] params = req.parameters();
-        try {
-            method = face.getDeclaredMethod(methodName, types);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-
-        try {
-            Bundle resp = execute(methodName, method, params);
-            return new Pair<>(true, resp);
-        } catch (Throwable e) {
-            Bundle resp = error(req, e, method, params);
-            return new Pair<>(false, resp);
-        }
-    }
-
-    Bundle execute(String methodName, Method method, Object[] params) throws Exception {
-        Object result = method.invoke(impl, params);
-
-        Bundle resp = new Bundle();
-        resp.putInt("id", id);
-        resp.putString("method", methodName);
-
-        if (resultProcessor == null) {
-            put(resp, "result", method.getReturnType(), result);
-        } else {
-            resultProcessor.process(resp, face, method, params, result);
-        }
-
-        return resp;
-    }
-
-    Bundle error(DecouplexRequest req, Throwable e, Method method, Object[] params) {
-        Bundle resp = new Bundle();
-        resp.putParcelable("request", req);
-        put(resp, "exception", null, e);
-
-        if (errorProcessor != null) {
-            errorProcessor.process(resp, face, method, params, e);
-        }
-        return resp;
-    }
-
-    /**
-     * broadcast a result or an error from service
-     * @param con       context
-     * @param action    ACTION_RESULT or ACTION_ERR
-     * @param extras    extras to broadcast
-     */
-    static void broadcast(Context con, String action, Bundle extras) {
-        Intent i = new Intent(action);
-        i.putExtras(extras);
-        LocalBroadcastManager man = LocalBroadcastManager.getInstance(con);
-        int attempts = 0;
-        while (!man.sendBroadcast(i)) {
-            try {
-                TimeUnit.MILLISECONDS.sleep(500);
-            } catch (InterruptedException e) {
-                // ok
-            }
-            attempts++;
-            if (attempts == 5) {
-                Log.e("Decouplex", "Intent has not been delivered: " + i);
-                break;
-            }
-        }
     }
 
     /**
@@ -227,11 +126,11 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
      * Searches concrete methods first, wildcard-containing methods then and
      * "*"-methods finally.
      * @param resultHandler object whose class will be analyzed & on which the method will be invoked
-     * @param bun           result
+     * @param response      result
      */
     @UiThread
-    void dispatchResult(Object resultHandler, Bundle bun) {
-        String method = bun.getString("method");
+    void dispatchResult(Object resultHandler, DecouplexResponse response) {
+        String method = response.request.methodName;
 
         try {
             if (handlers == null) {
@@ -241,10 +140,11 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
             handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
             HashSet<Object> args = new HashSet<>();
-            args.add(bun.get("result"));
 
-            if (resultAdapter != null) {
-                resultAdapter.adapt(face, method, handler, bun, args);
+            if (resultAdapter == null) {
+                args.add(response.result);
+            } else {
+                resultAdapter.adapt(face, method, handler, response.result, args);
             }
 
             handler.invoke(resultHandler, arguments(handler, args));
@@ -260,13 +160,13 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
     /**
      * Acts as the previous one, but for errors.
      * @param resultHandler    object who is ready to handle result
-     * @param req              request bundle
-     * @param resp             response bundle
+     * @param resp             response
      */
     @UiThread
-    void dispatchError(Object resultHandler, DecouplexRequest req, Bundle resp) {
-        Throwable executionFail = (Throwable) resp.get("exception");
+    void dispatchError(Object resultHandler, DecouplexResponse resp) {
+        Throwable executionFail = (Throwable) resp.result;
 
+        DecouplexRequest req = resp.request;
         HashSet<Object> args = new HashSet<>();
         args.add(req);
         args.add(executionFail);
@@ -316,19 +216,22 @@ final class Decouplex<FACE, HANDLER> implements InvocationHandler {
         List<Set<Object>> resultSets = new ArrayList<>();
         int i = 0;
         while (true) {
-            Bundle result = results.getBundle(Integer.toString(i));
-            if (result == null)
+            String n = Integer.toString(i);
+            String strategyName = results.getString("strategy" + n);
+            if (strategyName == null)
                 break;
+            DeliveryStrategy strategy = DeliveryStrategy.valueOf(strategyName);
+            DecouplexResponse response = strategy.obtainResponse(results.getParcelable(n));
 
-            String method = result.getString("method");
+            String method = response.request.methodName;
             methods.add(method);
 
-            Decouplex dec = find(result.getInt("id"));
+            Decouplex dec = response.request.decouplex;
 
             HashSet<Object> args = new HashSet<>();
-            args.add(result.get("result"));
+            args.add(response.result);
             if (dec.resultAdapter != null) {
-                dec.resultAdapter.adapt(dec.face, method, null, result, args);
+                dec.resultAdapter.adapt(dec.face, method, null, response.result, args);
             }
             resultSets.add(args);
 

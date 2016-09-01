@@ -1,7 +1,5 @@
 package net.aquadc.decouplex.adapter;
 
-import android.os.Bundle;
-
 import java.lang.reflect.Method;
 
 /**
@@ -9,5 +7,5 @@ import java.lang.reflect.Method;
  *
  */
 public interface ErrorProcessor {
-    void process(Bundle putHere, Class face, Method method, Object[] args, Throwable error);
+    void process(Class face, Method method, Object[] args, Throwable error);
 }

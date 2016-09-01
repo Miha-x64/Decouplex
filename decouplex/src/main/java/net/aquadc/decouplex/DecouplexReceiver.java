@@ -9,6 +9,8 @@ import android.content.IntentFilter;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 
+import net.aquadc.decouplex.delivery.DeliveryStrategy;
+
 import static net.aquadc.decouplex.Decouplex.ACTION_ERR;
 import static net.aquadc.decouplex.Decouplex.ACTION_RESULT;
 import static net.aquadc.decouplex.Decouplex.ACTION_RESULT_BATCH;
@@ -39,17 +41,17 @@ public final class DecouplexReceiver extends BroadcastReceiver {
         Bundle resp = intent.getExtras();
         String action = intent.getAction();
         if (actionResult.equals(action)) {
-            Decouplex
-                    .find(resp.getInt("id"))
-                    .dispatchResult(resultHandler, resp);
+            DeliveryStrategy strategy = DeliveryStrategy.valueOf(resp.getString("deliveryStrategy"));
+            DecouplexResponse response = strategy.obtainResponse(resp.getParcelable("response"));
+            response.dispatchResult(resultHandler);
         } else if (actionResultBatch.equals(action)) {
             DecouplexBatch
                     .find(resp.getInt("id"))
                     .dispatchResults(resultHandler, resp);
         } else if (actionError.equals(action)) {
-            DecouplexRequest req = resp.getParcelable("request");
-            Decouplex decouplex = Decouplex.find(req.decouplexId);
-            decouplex.dispatchError(resultHandler, req, resp);
+            DeliveryStrategy strategy = DeliveryStrategy.valueOf(resp.getString("deliveryStrategy"));
+            DecouplexResponse res = strategy.obtainResponse(resp.getParcelable("response"));
+            res.request.decouplex.dispatchError(resultHandler, res);
         }
     }
 

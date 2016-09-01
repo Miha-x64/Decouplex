@@ -3,43 +3,58 @@ package net.aquadc.decouplex;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
-import android.os.Parcel;
-import android.os.Parcelable;
 import android.support.annotation.Nullable;
+import android.support.annotation.WorkerThread;
+import android.support.v4.content.LocalBroadcastManager;
+import android.util.Log;
+import android.util.Pair;
 
+import net.aquadc.decouplex.adapter.ErrorProcessor;
+import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.annotation.Debounce;
 import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.lang.reflect.Method;
+import java.util.concurrent.TimeUnit;
+
+import static net.aquadc.decouplex.Decouplex.ACTION_RESULT;
+import static net.aquadc.decouplex.Decouplex.ACTION_ERR;
 
 /**
  * Created by miha on 20.08.16
  */
-public final class DecouplexRequest implements Parcelable {
+public final class DecouplexRequest {
 
-    final int decouplexId;
+    final Decouplex decouplex;
+    final int threads;
+    final Class<?> face;
+    final Object impl;
     final String methodName;
     final String[] parameterTypes;
-    final Bundle parameters;
+    final Object[] parameters;
     final String receiverActionSuffix;
     final DeliveryStrategy deliveryStrategy;
+    final ResultProcessor resultProcessor;
+    final ErrorProcessor errorProcessor;
 
-    DecouplexRequest(int decouplexId, Method method, @Nullable Object[] args, String receiverActionSuffix, DeliveryStrategy deliveryStrategy) {
-        this.decouplexId = decouplexId;
+    DecouplexRequest(
+            Decouplex decouplex,
+            int threads,
+            Class face, Object impl, Method method, @Nullable Object[] args,
+            String receiverActionSuffix,
+            DeliveryStrategy deliveryStrategy,
+            ResultProcessor resultProcessor, ErrorProcessor errorProcessor) {
+        this.decouplex = decouplex;
+        this.threads = threads;
+        this.face = face;
+        this.impl = impl;
         this.methodName = method.getName();
         this.parameterTypes = parameterTypesOf(method);
-        this.parameters = asBundle(method, args == null ? TypeUtils.EMPTY_ARRAY : args);
+        this.parameters = args == null ? TypeUtils.EMPTY_ARRAY : args;
         this.receiverActionSuffix = receiverActionSuffix;
         this.deliveryStrategy = deliveryStrategy;
-    }
-
-    DecouplexRequest(int decouplexId, String methodName, String[] parameterTypes, Bundle parameters, String receiverActionSuffix, DeliveryStrategy deliveryStrategy) {
-        this.decouplexId = decouplexId;
-        this.methodName = methodName;
-        this.parameterTypes = parameterTypes;
-        this.parameters = parameters;
-        this.receiverActionSuffix = receiverActionSuffix;
-        this.deliveryStrategy = deliveryStrategy;
+        this.resultProcessor = resultProcessor;
+        this.errorProcessor = errorProcessor;
     }
 
     public void retry(Context context) {
@@ -50,7 +65,7 @@ public final class DecouplexRequest implements Parcelable {
     public String toString() {
         StringBuilder bu = new StringBuilder("DecouplexRequest:");
         bu.append(methodName).append("(");
-        for (Object param : parameters()) {
+        for (Object param : parameters) {
             bu.append(param);
         }
         bu.append(")");
@@ -66,7 +81,7 @@ public final class DecouplexRequest implements Parcelable {
 
         data.putString("receiver", receiverActionSuffix);
 
-        data.putParcelable("request", deliveryStrategy.createRequest(this));
+        data.putParcelable("request", deliveryStrategy.transferRequest(this));
         data.putString("deliveryStrategy", deliveryStrategy.name());
 
         return data;
@@ -82,11 +97,11 @@ public final class DecouplexRequest implements Parcelable {
         return types;
     }
 
-    private static Bundle asBundle(Method method, Object[] args) {
+    /*private static Bundle asBundle(Method method, Object[] args) {
         Bundle bun = new Bundle(args.length);
         TypeUtils.packParameters(bun, method.getParameterTypes(), args);
         return bun;
-    }
+    }*/
 
     Class[] parameterTypes() {
         final int count = parameterTypes.length;
@@ -98,7 +113,7 @@ public final class DecouplexRequest implements Parcelable {
         return types;
     }
 
-    Object[] parameters() {
+    /*Object[] parameters() {
         final int count = parameterTypes.length;
         Bundle bundled = this.parameters;
         Object[] parameters = new Object[count];
@@ -106,7 +121,7 @@ public final class DecouplexRequest implements Parcelable {
             parameters[i] = bundled.get(Integer.toString(i));
         }
         return parameters;
-    }
+    }*/
 
     static void startExecService(Context context, Bundle extras) {
         Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
@@ -118,36 +133,80 @@ public final class DecouplexRequest implements Parcelable {
         }
     }
 
-    @Override
-    public int describeContents() {
-        return 0;
+    @WorkerThread
+    void executeAndBroadcast(Context con, String bReceiver) {
+        Pair<Boolean, DecouplexResponse> result = execute();
+        if (result.first) { // success
+            broadcast(con, ACTION_RESULT + bReceiver, result.second);
+        } else {
+            broadcast(con, ACTION_ERR + bReceiver, result.second);
+        }
     }
 
-    @Override
-    public void writeToParcel(Parcel parcel, int i) {
-        parcel.writeInt(decouplexId);
-        parcel.writeString(methodName);
-        parcel.writeStringArray(parameterTypes);
-        parcel.writeBundle(parameters);
-        parcel.writeString(receiverActionSuffix);
-        parcel.writeString(deliveryStrategy.name());
+    static void broadcast(Context con, String action, DecouplexResponse result) {
+        DeliveryStrategy strategy = result.request.deliveryStrategy;
+        Bundle bun = new Bundle();
+        bun.putParcelable("response", strategy.transferResponse(result));
+        bun.putString("deliveryStrategy", strategy.name());
+
+        broadcast(con, action, bun);
     }
 
-    public static final Parcelable.Creator<DecouplexRequest> CREATOR = new Parcelable.Creator<DecouplexRequest>() {
-        @Override
-        public DecouplexRequest createFromParcel(Parcel parcel) {
-            int decouplexId = parcel.readInt();
-            String methodName = parcel.readString();
-            String[] parameterTypes = parcel.createStringArray();
-            Bundle parameters = parcel.readBundle(getClass().getClassLoader());
-            String receiverActionSuffix = parcel.readString();
-            DeliveryStrategy deliveryStrategy = DeliveryStrategy.valueOf(parcel.readString());
-            return new DecouplexRequest(decouplexId, methodName, parameterTypes, parameters, receiverActionSuffix, deliveryStrategy);
+    static void broadcast(Context con, String action, Bundle extras) {
+        Intent i = new Intent(action);
+        i.putExtras(extras);
+
+        LocalBroadcastManager man = LocalBroadcastManager.getInstance(con);
+        int attempts = 0;
+        while (!man.sendBroadcast(i)) {
+            try {
+                TimeUnit.MILLISECONDS.sleep(500);
+            } catch (InterruptedException e) {
+                // ok
+            }
+            attempts++;
+            if (attempts == 5) {
+                Log.e("Decouplex", "Intent has not been delivered: " + i);
+                break;
+            }
+        }
+    }
+
+    Pair<Boolean, DecouplexResponse> execute() {
+        Method method;
+        Object[] params = parameters;
+        try {
+            method = face.getDeclaredMethod(methodName, parameterTypes());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
 
-        @Override
-        public DecouplexRequest[] newArray(int i) {
-            return new DecouplexRequest[i];
+        try {
+            DecouplexResponse resp = execute(method, params);
+            return new Pair<>(true, resp);
+        } catch (Throwable e) {
+            DecouplexResponse resp = error(this, e, method, params);
+            return new Pair<>(false, resp);
         }
-    };
+    }
+
+    DecouplexResponse execute(Method method, Object[] params) throws Exception {
+        Object result = method.invoke(impl, params);
+
+        if (resultProcessor != null) {
+            result = resultProcessor.process(face, method, params, result);
+        }
+
+        return new DecouplexResponse(this, result);
+    }
+
+    DecouplexResponse error(DecouplexRequest req, Throwable e, Method method, Object[] params) {
+        DecouplexResponse response = new DecouplexResponse(req, e);
+
+        if (errorProcessor != null) {
+            errorProcessor.process(face, method, params, e);
+        }
+
+        return response;
+    }
 }

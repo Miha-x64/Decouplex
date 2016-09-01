@@ -10,8 +10,10 @@ import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -23,7 +25,7 @@ import static net.aquadc.decouplex.Decouplex.ACTION_ERR;
 import static net.aquadc.decouplex.Decouplex.ACTION_EXEC;
 import static net.aquadc.decouplex.Decouplex.ACTION_EXEC_BATCH;
 import static net.aquadc.decouplex.Decouplex.ACTION_RESULT_BATCH;
-import static net.aquadc.decouplex.Decouplex.broadcast;
+import static net.aquadc.decouplex.DecouplexRequest.broadcast;
 
 /**
  * Created by miha on 14.05.16.
@@ -32,7 +34,7 @@ import static net.aquadc.decouplex.Decouplex.broadcast;
 public final class DecouplexService extends IntentService {
 
     private static final Map<String, ScheduledFuture<?>> debounced = new HashMap<>();
-    private static final Map<Decouplex, Executor> executors = new HashMap<>();
+    private static final Set<Executor> executors = new HashSet<>();
 
     public DecouplexService() {
         super(DecouplexService.class.getSimpleName());
@@ -45,32 +47,29 @@ public final class DecouplexService extends IntentService {
                 Bundle extras = intent.getExtras();
                 DeliveryStrategy deliveryStrategy = DeliveryStrategy.valueOf(extras.getString("deliveryStrategy"));
                 DecouplexRequest request = deliveryStrategy.obtainRequest(extras.getParcelable("request"));
-                int id = request.decouplexId;
-                Decouplex decouplex = Decouplex.find(id);
-                if (decouplex == null) {
-                    throw new NullPointerException("Internal delivery error.");
-                }
 
                 int debounce = extras.getInt("debounce", -1);
                 String bReceiver = extras.getString("receiver");
                 if (debounce == -1) {
-                    findExecutorFor(decouplex).submit(() -> decouplex.executeAndBroadcast(this, request, bReceiver));
+                    findExecutorWith(request.threads).submit(
+                            () -> request.executeAndBroadcast(this, bReceiver));
                 } else {
-                    String methodId = id + "|" + bReceiver + "|" + request.methodName;
+                    String methodId = bReceiver + "|" + request.methodName;
                     Future<?> old = debounced.get(methodId);
                     if (old != null) {
                         old.cancel(false);
                     }
 
                     ScheduledFuture<?> f =
-                            findExecutorFor(decouplex).schedule(() -> decouplex.executeAndBroadcast(this, request, bReceiver), debounce, methodId);
+                            findExecutorWith(request.threads).schedule(
+                                    () -> request.executeAndBroadcast(this, bReceiver), debounce, methodId);
                     debounced.put(methodId, f);
                 }
                 break;
             }
             case ACTION_EXEC_BATCH: {
                 Bundle bun = intent.getExtras();
-                List<Future<Pair<Boolean, Bundle>>> futures = new ArrayList<>();
+                List<Future<Pair<Boolean, DecouplexResponse>>> futures = new ArrayList<>();
                 int i = 0;
                 Executor exec = null;
                 while (true) {
@@ -80,10 +79,10 @@ public final class DecouplexService extends IntentService {
 
                     DeliveryStrategy deliveryStrategy = DeliveryStrategy.valueOf(req.getString("deliveryStrategy"));
                     DecouplexRequest request = deliveryStrategy.obtainRequest(req.getParcelable("request"));
-                    Decouplex decouplex = Decouplex.find(request.decouplexId);
 
-                    exec = findExecutorFor(decouplex);
-                    futures.add(exec.submit(() -> decouplex.execute(request)));
+                    exec = findExecutorWith(request.threads);
+                    Callable<Pair<Boolean, DecouplexResponse>> task = request::execute;
+                    futures.add(exec.submit(task));
                     i++;
                 }
 
@@ -97,10 +96,13 @@ public final class DecouplexService extends IntentService {
                     int j = 0;
                     try {
                         Bundle resp = new Bundle();
-                        for (Future<Pair<Boolean, Bundle>> future : futures) {
-                            Pair<Boolean, Bundle> result = future.get();
+                        for (Future<Pair<Boolean, DecouplexResponse>> future : futures) {
+                            Pair<Boolean, DecouplexResponse> result = future.get();
                             if (result.first) {
-                                resp.putBundle(Integer.toString(j), result.second);
+                                String n = Integer.toString(j);
+                                resp.putParcelable(n,
+                                        result.second.request.deliveryStrategy.transferResponse(result.second));
+                                resp.putString("strategy" + n, result.second.request.deliveryStrategy.name());
                             } else {
                                 Log.e("DecouplexService", "Broadcasting error from batch.");
                                 broadcast(this, ACTION_ERR + bun.get("receiver"), result.second);
@@ -171,24 +173,19 @@ public final class DecouplexService extends IntentService {
         }
     }
 
-    private static synchronized Executor findExecutorFor(Decouplex decouplex) {
-        Executor executor = executors.get(decouplex);
-        if (executor == null) {
-            // no executor for this task — find free one
-            for (Map.Entry<Decouplex, Executor> entry : executors.entrySet()) {
-                Executor val = entry.getValue();
-                if (val.isFree() && val.threads == decouplex.threads) {
-                    executors.remove(entry.getKey());
-                    executors.put(decouplex, val);
-                    executor = val;
-                    break;
-                }
+    private static synchronized Executor findExecutorWith(int threads) {
+        Executor executor = null;
+
+        for (Executor ex : executors) {
+            if (ex.isFree() && ex.threads == threads) {
+                executor = ex;
+                break;
             }
         }
         if (executor == null) {
             // no free executors — add one
-            executor = new Executor(decouplex.threads);
-            executors.put(decouplex, executor);
+            executor = new Executor(threads);
+            executors.add(executor);
         }
         return executor;
     }

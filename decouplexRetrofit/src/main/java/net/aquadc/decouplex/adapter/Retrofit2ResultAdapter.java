@@ -1,7 +1,5 @@
 package net.aquadc.decouplex.adapter;
 
-import android.os.Bundle;
-
 import java.lang.reflect.Method;
 import java.util.Set;
 
@@ -16,8 +14,7 @@ public final class Retrofit2ResultAdapter implements ResultAdapter {
     private Retrofit2ResultAdapter() {}
 
     @Override
-    public void adapt(Class face, String methodName, Method handler, Bundle answer, Set<Object> args) {
-        args.add(answer.get("body"));
-        args.add(answer.get("code"));
+    public void adapt(Class face, String methodName, Method handler, Object answer, Set<Object> args) {
+        args.add(answer); // todo: rm this adapter if no more code
     }
 }
