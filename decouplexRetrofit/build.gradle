@@ -13,7 +13,7 @@ ext {
     siteUrl = 'https://github.com/Miha-x64/Decouplex'
     gitUrl = 'https://github.com/Miha-x64/Decouplex.git'
 
-    libraryVersion = '0.0.1'
+    libraryVersion = '0.0.2'
 
     developerId = 'miha-x64'
     developerName = 'Mikhail'
@@ -47,9 +47,9 @@ dependencies {
     compile fileTree(include: ['*.jar'], dir: 'libs')
     testCompile 'junit:junit:4.12'
     compile 'com.squareup.retrofit2:retrofit:2.0.2'
-    compile project(':decouplex')
-//    compile 'net.aquadc.decouplex:decouplex:0.0.1'
+//    compile project(':decouplex')
+    compile 'net.aquadc.decouplex:decouplex:0.0.2'
 }
 
-apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
-apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'
+//apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/installv1.gradle'
+//apply from: 'https://raw.githubusercontent.com/nuuneoi/JCenter/master/bintrayv1.gradle'
