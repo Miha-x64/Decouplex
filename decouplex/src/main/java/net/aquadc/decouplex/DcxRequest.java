@@ -9,7 +9,9 @@ import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.util.Pair;
 
+import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
+import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.annotation.Debounce;
 import net.aquadc.decouplex.delivery.DeliveryStrategy;
@@ -17,44 +19,52 @@ import net.aquadc.decouplex.delivery.DeliveryStrategy;
 import java.lang.reflect.Method;
 import java.util.concurrent.TimeUnit;
 
-import static net.aquadc.decouplex.Decouplex.ACTION_RESULT;
-import static net.aquadc.decouplex.Decouplex.ACTION_ERR;
+import static net.aquadc.decouplex.DcxInvocationHandler.ACTION_RESULT;
+import static net.aquadc.decouplex.DcxInvocationHandler.ACTION_ERR;
 
 /**
  * Created by miha on 20.08.16
  */
-public final class DecouplexRequest {
+public final class DcxRequest {
 
-    final Decouplex decouplex;
     final int threads;
     final Class<?> face;
-    final Object impl;
+    private final Object impl;
     final String methodName;
-    final String[] parameterTypes;
-    final Object[] parameters;
-    final String receiverActionSuffix;
+    private final Class<?>[] parameterTypes;
+    private final Object[] parameters;
+    private final String receiverActionSuffix;
     final DeliveryStrategy deliveryStrategy;
-    final ResultProcessor resultProcessor;
-    final ErrorProcessor errorProcessor;
+    private final ResultProcessor resultProcessor;
+    final ResultAdapter resultAdapter;
+    private final ErrorProcessor errorProcessor;
+    final ErrorAdapter errorAdapter;
+    final DcxInvocationHandler.ErrorHandler fallbackErrorHandler;
+    final Class<?> handler;
 
-    DecouplexRequest(
-            Decouplex decouplex,
+    DcxRequest(
             int threads,
             Class face, Object impl, Method method, @Nullable Object[] args,
             String receiverActionSuffix,
             DeliveryStrategy deliveryStrategy,
-            ResultProcessor resultProcessor, ErrorProcessor errorProcessor) {
-        this.decouplex = decouplex;
+            ResultProcessor resultProcessor, ResultAdapter resultAdapter,
+            ErrorProcessor errorProcessor, ErrorAdapter errorAdapter,
+            DcxInvocationHandler.ErrorHandler fallbackErrorHandler,
+            Class<?> handler) {
         this.threads = threads;
         this.face = face;
         this.impl = impl;
         this.methodName = method.getName();
-        this.parameterTypes = parameterTypesOf(method);
+        this.parameterTypes = method.getParameterTypes();
         this.parameters = args == null ? TypeUtils.EMPTY_ARRAY : args;
         this.receiverActionSuffix = receiverActionSuffix;
         this.deliveryStrategy = deliveryStrategy;
         this.resultProcessor = resultProcessor;
+        this.resultAdapter = resultAdapter;
         this.errorProcessor = errorProcessor;
+        this.errorAdapter = errorAdapter;
+        this.fallbackErrorHandler = fallbackErrorHandler;
+        this.handler = handler;
     }
 
     public void retry(Context context) {
@@ -64,11 +74,11 @@ public final class DecouplexRequest {
     @Override
     public String toString() {
         StringBuilder bu = new StringBuilder("DecouplexRequest:");
-        bu.append(methodName).append("(");
+        bu.append(methodName).append('(');
         for (Object param : parameters) {
             bu.append(param);
         }
-        bu.append(")");
+        bu.append(')');
         return bu.toString();
     }
 
@@ -87,45 +97,9 @@ public final class DecouplexRequest {
         return data;
     }
 
-    private static String[] parameterTypesOf(Method method) {
-        Class[] classes = method.getParameterTypes();
-        final int len = classes.length;
-        String[] types = new String[len];
-        for (int i = 0; i < len; i++) {
-            types[i] = classes[i].getCanonicalName();
-        }
-        return types;
-    }
-
-    /*private static Bundle asBundle(Method method, Object[] args) {
-        Bundle bun = new Bundle(args.length);
-        TypeUtils.packParameters(bun, method.getParameterTypes(), args);
-        return bun;
-    }*/
-
-    Class[] parameterTypes() {
-        final int count = parameterTypes.length;
-        String[] classes = parameterTypes;
-        Class[] types = new Class[count];
-        for (int i = 0; i < count; i++) {
-            types[i] = TypeUtils.classForName(classes[i]);
-        }
-        return types;
-    }
-
-    /*Object[] parameters() {
-        final int count = parameterTypes.length;
-        Bundle bundled = this.parameters;
-        Object[] parameters = new Object[count];
-        for (int i = 0; i < count; i++) {
-            parameters[i] = bundled.get(Integer.toString(i));
-        }
-        return parameters;
-    }*/
-
     static void startExecService(Context context, Bundle extras) {
-        Intent service = new Intent(context, DecouplexService.class); // TODO: different executors
-        service.setAction(Decouplex.ACTION_EXEC);
+        Intent service = new Intent(context, DcxService.class);
+        service.setAction(DcxInvocationHandler.ACTION_EXEC);
         service.putExtras(extras);
 
         if (context.startService(service) == null) {
@@ -135,7 +109,7 @@ public final class DecouplexRequest {
 
     @WorkerThread
     void executeAndBroadcast(Context con, String bReceiver) {
-        Pair<Boolean, DecouplexResponse> result = execute();
+        Pair<Boolean, DcxResponse> result = execute();
         if (result.first) { // success
             broadcast(con, ACTION_RESULT + bReceiver, result.second);
         } else {
@@ -143,7 +117,7 @@ public final class DecouplexRequest {
         }
     }
 
-    static void broadcast(Context con, String action, DecouplexResponse result) {
+    static void broadcast(Context con, String action, DcxResponse result) {
         DeliveryStrategy strategy = result.request.deliveryStrategy;
         Bundle bun = new Bundle();
         bun.putParcelable("response", strategy.transferResponse(result));
@@ -172,36 +146,36 @@ public final class DecouplexRequest {
         }
     }
 
-    Pair<Boolean, DecouplexResponse> execute() {
+    Pair<Boolean, DcxResponse> execute() {
         Method method;
         Object[] params = parameters;
         try {
-            method = face.getDeclaredMethod(methodName, parameterTypes());
+            method = face.getDeclaredMethod(methodName, parameterTypes);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         try {
-            DecouplexResponse resp = execute(method, params);
+            DcxResponse resp = execute(method, params);
             return new Pair<>(true, resp);
         } catch (Throwable e) {
-            DecouplexResponse resp = error(this, e, method, params);
+            DcxResponse resp = error(this, e, method, params);
             return new Pair<>(false, resp);
         }
     }
 
-    DecouplexResponse execute(Method method, Object[] params) throws Exception {
+    private DcxResponse execute(Method method, Object[] params) throws Exception {
         Object result = method.invoke(impl, params);
 
         if (resultProcessor != null) {
             result = resultProcessor.process(face, method, params, result);
         }
 
-        return new DecouplexResponse(this, result);
+        return new DcxResponse(this, result);
     }
 
-    DecouplexResponse error(DecouplexRequest req, Throwable e, Method method, Object[] params) {
-        DecouplexResponse response = new DecouplexResponse(req, e);
+    private DcxResponse error(DcxRequest req, Throwable e, Method method, Object[] params) {
+        DcxResponse response = new DcxResponse(req, e);
 
         if (errorProcessor != null) {
             errorProcessor.process(face, method, params, e);

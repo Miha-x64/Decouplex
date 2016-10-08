@@ -1,30 +1,29 @@
 package net.aquadc.decouplex;
 
-import android.os.Bundle;
-import android.support.annotation.Nullable;
+import android.support.v4.util.SimpleArrayMap;
 
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 /**
  * Created by miha on 14.05.16.
  *
  */
-/*package*/ abstract class TypeUtils {
+/*package*/ final class TypeUtils {
+
+    private TypeUtils() {
+        throw new AssertionError();
+    }
 
     /*package*/ static final Object[] EMPTY_ARRAY = new Object[0];
 
     /**
      * wrapper-classes for primitives
      */
-    private static final Map<Class, Class> wrappers;
+    private static final SimpleArrayMap<Class, Class> wrappers;
     static {
-        HashMap<Class, Class> m = new HashMap<>();
+        SimpleArrayMap<Class, Class> m = new SimpleArrayMap<>(8);
 
         m.put(boolean.class,Boolean.class);
         m.put(byte.class,   Byte.class);
@@ -35,15 +34,15 @@ import java.util.Set;
         m.put(float.class,  Float.class);
         m.put(double.class, Double.class);
 
-        wrappers = Collections.unmodifiableMap(m);
+        wrappers = m;
     }
 
     /**
-     * Class.forName ignores primitives, it is a workaround
+     * Class.forName ignores primitives, this is a workaround
      */
-    private static final Map<String, Class> primitives;
+    /*private static final SimpleArrayMap<String, Class> primitives;
     static {
-        HashMap<String, Class> m = new HashMap<>();
+        SimpleArrayMap<String, Class> m = new SimpleArrayMap<>(8);
 
         m.put(boolean.class.getCanonicalName(), boolean.class);
         m.put(byte.class.getCanonicalName(),    byte.class);
@@ -54,67 +53,19 @@ import java.util.Set;
         m.put(float.class.getCanonicalName(),   float.class);
         m.put(double.class.getCanonicalName(),  double.class);
 
-        primitives = Collections.unmodifiableMap(m);
-    }
-
-    /**
-     * find handler for the method result
-     * @param methodName    the name of method that has been invoked
-     * @param classified    handlers for certain class
-     * @param fallback      just handlers
-     * @param handlerClass  class where handlers coming from
-     * @return Method to handle response
-     */
-    /*package*/ static Method handler(String methodName, Handlers classified, Handlers fallback, Class handlerClass) {
-
-        Method handler = handler(methodName, classified);
-        if (handler != null)
-            return handler;
-
-        handler = handler(methodName, fallback);
-        if (handler != null)
-            return handler;
-
-        if (handlerClass == null) {
-            throw new RuntimeException("handler for result of method '" + methodName + "' not found.");
-        } else {
-            throw new RuntimeException("handler for result of method '" + methodName + "' not found in class " + handlerClass.getSimpleName() + ".");
-        }
-    }
-    /*package*/ static Method handler(String methodName, Handlers classified, Handlers fallback) {
-        // todo: rm legacy method
-        return handler(methodName, classified, fallback, null);
-    }
-
-    @Nullable
-    private static Method handler(String methodName, Handlers handlers) {
-        Method handler = handlers.immediateHandlers.get(methodName);
-        if (handler != null)
-            return handler;
-
-        for (String wildcard : handlers.wildcardHandlers.keySet()) {
-            if (matches(methodName, wildcard)) {
-                return handlers.wildcardHandlers.get(wildcard);
-            }
-        }
-
-        return handlers.fallback;
-    }
-
-    private static boolean matches(String text, String wildcard) {
-        return text.matches(wildcard.replace("*", ".*?"));
-    }
+        primitives = m;
+    }*/
 
     /**
      * Pack parameters, passed to the method, to the bundle
      * @param bun bundle where arguments will be put
      * @param args arguments
      */
-    /*package*/ static void packParameters(Bundle bun, Class[] types, Object[] args) {
+    /*package*/ /*static void packParameters(Bundle bun, Class[] types, Object[] args) {
         for (int i = 0; i < args.length; i++) {
             Converter.put(bun, Integer.toString(i), types[i], args[i]);
         }
-    }
+    }*/
 
     /**
      * Unpack parameters
@@ -122,36 +73,36 @@ import java.util.Set;
      * @param count number of parameters
      * @return parameters
      */
-    /*package*/ static Object[] unpackParameters(Bundle bun, int count) {
+    /*package*/ /*static Object[] unpackParameters(Bundle bun, int count) {
         Object[] params = new Object[count];
         for (int i = 0; i < count; i++) {
             params[i] = bun.get(Integer.toString(i));
         }
         return params;
-    }
+    }*/
 
     /**
      * Store parameter types to the bundle
      * @param bun bundle to store types
      * @param types types
      */
-    /*package*/ static void packTypes(Bundle bun, Class<?>[] types) {
+    /*package*/ /*static void packTypes(Bundle bun, Class<?>[] types) {
         for (int i = 0; i < types.length; i++) {
             Class<?> type = types[i];
 //            if (type.isPrimitive()) {
 //                type = wrappers.get(type);
 //            }
-            bun.putString("T" + Integer.toString(i), type.getCanonicalName());
+            bun.putString('T' + Integer.toString(i), type.getCanonicalName());
         }
-    }
+    }*/
 
     /**
      * Obtain parameter types from the bundle
      * @param bun bundle
      * @return types
      */
-    /*package*/ static Class<?>[] unpackTypes(Bundle bun) {
-        ArrayList<Class> types = new ArrayList<>();
+    /*package*/ /*static Class<?>[] unpackTypes(Bundle bun) {
+        ArrayList<Class> types = new ArrayList<>(4);
         String type;
         int i = 0;
         while ((type = bun.getString("T" + i)) != null) {
@@ -160,7 +111,7 @@ import java.util.Set;
         }
         Class[] classes = new Class[types.size()];
         return types.toArray(classes);
-    }
+    }*/
 
     /*package*/ static Object[] arguments(Method handlerMethod, Set<Object> args) {
         Class[] types = handlerMethod.getParameterTypes();
@@ -176,7 +127,7 @@ import java.util.Set;
                 }
             }
             if (arg == null) {
-                throw new IllegalArgumentException("can't find applicable argument of type '" + type + "' for method '" + handlerMethod + "'");
+                throw new IllegalArgumentException("can't find applicable argument of type '" + type + "' for method '" + handlerMethod + '\'');
             }
             params[i] = arg;
         }
@@ -206,7 +157,7 @@ import java.util.Set;
         return params;
     }
 
-    /*package*/ static Class<?> classForName(String name) {
+    /*package*/ /*static Class<?> classForName(String name) {
         Class cls = primitives.get(name);
         if (cls != null)
             return cls;
@@ -215,6 +166,6 @@ import java.util.Set;
         } catch (ClassNotFoundException e) {
             throw new RuntimeException(e);
         }
-    }
+    }*/
 
 }

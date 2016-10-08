@@ -1,6 +1,6 @@
 package net.aquadc.decouplex;
 
-import android.support.annotation.Nullable;
+import android.support.v4.util.SimpleArrayMap;
 
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
@@ -8,9 +8,6 @@ import net.aquadc.decouplex.annotation.OnResult;
 import java.lang.ref.Reference;
 import java.lang.ref.WeakReference;
 import java.lang.reflect.Method;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Created by miha on 15.05.16.
@@ -18,9 +15,9 @@ import java.util.Map;
  */
 final class Handlers {
 
-    final Map<String, Method> immediateHandlers = new HashMap<>();
-    final Map<String, Method> wildcardHandlers = new HashMap<>();
-    Method fallback;
+    private final SimpleArrayMap<String, Method> immediateHandlers = new SimpleArrayMap<>();
+    private final SimpleArrayMap<String, Method> wildcardHandlers = new SimpleArrayMap<>();
+    private Method fallback;
 
     private Handlers() {
     }
@@ -28,12 +25,16 @@ final class Handlers {
     /**
      * handlers management
      */
-    private static final Map<Class, Reference<HandlerSet>> handlerSets = new HashMap<>();
+    private static final SimpleArrayMap<Class, Reference<HandlerSet>> handlerSets = new SimpleArrayMap<>();
 
     static HandlerSet forClass(Class target) {
-        HandlerSet set = get(handlerSets.get(target));
-        if (set != null)
-            return set;
+        Reference<HandlerSet> setRef = handlerSets.get(target);
+        if (setRef != null) {
+            HandlerSet set = setRef.get();
+            if (set != null) {
+                return set;
+            }
+        }
 
         Handlers targetedResultHandlers = new Handlers();
         Handlers resultHandlers = new Handlers();
@@ -43,24 +44,24 @@ final class Handlers {
         for (Method method : target.getDeclaredMethods()) {
             OnResult onResult = method.getAnnotation(OnResult.class);
             if (onResult != null) {
-                if (onResult.face() == null) {
+                if (onResult.face() == Void.class) {
                     add(resultHandlers, method, onResult.value());
-                } else {
+                } else if (onResult.face() == target) { // todo: test targeting
                     add(targetedResultHandlers, method, onResult.value());
                 }
             }
 
             OnError onError = method.getAnnotation(OnError.class);
             if (onError != null) {
-                if (onError.face() == null) {
+                if (onError.face() == Void.class) {
                     add(errorHandlers, method, onError.value());
-                } else {
+                } else if (onError.face() == target) {
                     add(targetedErrorHandlers, method, onError.value());
                 }
             }
         }
 
-        set = new HandlerSet(targetedResultHandlers, resultHandlers, targetedErrorHandlers, errorHandlers);
+        HandlerSet set = new HandlerSet(targetedResultHandlers, resultHandlers, targetedErrorHandlers, errorHandlers);
         handlerSets.put(target, new WeakReference<>(set));
         return set;
     }
@@ -88,9 +89,21 @@ final class Handlers {
         }
     }
 
-    @Nullable
-    private static <T> T get(@Nullable Reference<T> ref) {
-        return ref == null ? null : ref.get();
+    Method forName(String methodName) {
+        Method handler = immediateHandlers.get(methodName);
+        if (handler != null)
+            return handler;
+
+        SimpleArrayMap<String, Method> wildcardHandlers = this.wildcardHandlers;
+        int size = wildcardHandlers.size();
+        for (int i = 0; i < size; i++) {
+            String wildcard = wildcardHandlers.keyAt(i);
+            if (methodName.matches(wildcard.replace("*", ".*?"))) {
+                return wildcardHandlers.get(wildcard);
+            }
+        }
+
+        return fallback;
     }
 
     @Override
@@ -98,6 +111,6 @@ final class Handlers {
         return "Handlers(" +
                 "immediate: " + immediateHandlers + ", " +
                 "wildcard: " + wildcardHandlers + ", " +
-                "fallback: " + fallback + ")";
+                "fallback: " + fallback + ')';
     }
 }

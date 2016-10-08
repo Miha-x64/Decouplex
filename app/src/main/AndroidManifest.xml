@@ -20,7 +20,7 @@
             </intent-filter>
         </activity>
 
-        <service android:name="net.aquadc.decouplex.DecouplexService" />
+        <service android:name="net.aquadc.decouplex.DcxService" />
 
     </application>
 

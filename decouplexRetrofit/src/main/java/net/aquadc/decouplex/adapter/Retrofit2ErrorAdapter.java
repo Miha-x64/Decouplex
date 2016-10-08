@@ -1,6 +1,6 @@
 package net.aquadc.decouplex.adapter;
 
-import net.aquadc.decouplex.DecouplexResponse;
+import net.aquadc.decouplex.DcxResponse;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
@@ -17,7 +17,7 @@ public final class Retrofit2ErrorAdapter implements ErrorAdapter {
     private Retrofit2ErrorAdapter() {}
 
     @Override
-    public void adapt(Class face, String methodName, Method handler, Throwable t, DecouplexResponse response, Set<Object> params) throws Throwable {
+    public void adapt(Class face, String methodName, Method handler, Throwable t, DcxResponse response, Set<Object> params) throws Throwable {
         if (t instanceof HttpException) {
             params.add(((HttpException) t).code);
             params.add(((HttpException) t).message);

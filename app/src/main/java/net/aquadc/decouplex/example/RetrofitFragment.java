@@ -16,7 +16,7 @@ import android.widget.TextView;
 import net.aquadc.decouplex.DecouplexBatch;
 import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.DecouplexFragmentCompat;
-import net.aquadc.decouplex.DecouplexRequest;
+import net.aquadc.decouplex.DcxRequest;
 import net.aquadc.decouplex.DecouplexRetrofit;
 import net.aquadc.decouplex.adapter.HttpException;
 import net.aquadc.decouplex.annotation.OnError;
@@ -166,7 +166,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
     // This method intentionally handles only listRepos' error:
     // fail()'s errors will trigger fallback error handler, not this one.
     @OnError("listRepos")
-    void onError(final DecouplexRequest failedRequest, Exception e) {
+    void onError(final DcxRequest failedRequest, Exception e) {
         if (e instanceof HttpException) {
             // http error
             HttpException http = (HttpException) e;

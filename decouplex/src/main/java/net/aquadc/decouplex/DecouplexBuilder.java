@@ -7,7 +7,7 @@ import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
-import net.aquadc.decouplex.delivery.DeliveryStrategy;
+import net.aquadc.decouplex.delivery.DeliveryStrategies;
 
 import java.lang.reflect.Proxy;
 
@@ -28,7 +28,7 @@ public final class DecouplexBuilder<FACE, HANDLER> {
     private ErrorProcessor errorProcessor;
     private ErrorAdapter errorAdapter;
 
-    private Decouplex.ErrorHandler fallbackErrorHandler;
+    private DcxInvocationHandler.ErrorHandler fallbackErrorHandler;
 
     public DecouplexBuilder(@NonNull Class<FACE> face, @NonNull FACE impl, @NonNull Class<HANDLER> handler) {
         // noinspection ConstantConditions
@@ -93,7 +93,7 @@ public final class DecouplexBuilder<FACE, HANDLER> {
         return this;
     }
 
-    public DecouplexBuilder<FACE, HANDLER> fallbackErrorHandler(Decouplex.ErrorHandler handler) {
+    public DecouplexBuilder<FACE, HANDLER> fallbackErrorHandler(DcxInvocationHandler.ErrorHandler handler) {
         // noinspection ConstantConditions
         if (handler == null) {
             throw new NullPointerException("attempt to set null ErrorHandler");
@@ -113,12 +113,12 @@ public final class DecouplexBuilder<FACE, HANDLER> {
 
         return (FACE) Proxy.newProxyInstance(
                 face.getClassLoader(), new Class[]{face},
-                new Decouplex<>(context.getApplicationContext(),
+                new DcxInvocationHandler<>(context.getApplicationContext(),
                         face, impl, handler, threads,
                         resultProcessor, resultAdapter,
                         errorProcessor, errorAdapter,
                         fallbackErrorHandler,
-                        DeliveryStrategy.LOCAL)); // todo
+                        DeliveryStrategies.LOCAL)); // todo
     }
 
 }
