@@ -83,7 +83,7 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
         this.fallbackErrorHandler = fallbackErrorHandler;
 
         this.deliveryStrategy = deliveryStrategy;
-        this.handlers = Handlers.forClass(handler);
+        this.handlers = Handlers.forClass(face, handler);
 
         id = instancesCount.incrementAndGet();
     }

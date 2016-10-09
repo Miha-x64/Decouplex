@@ -34,7 +34,7 @@ public class DcxResponse {
         String method = request.methodName;
 
         try {
-            Method handler = HandlerSet.forMethod(method, true, request.handler);
+            Method handler = HandlerSet.forMethod(request.face, method, true, request.handler);
             handler.setAccessible(true);
 
             Set<Object> args = new HashSet<>(2);

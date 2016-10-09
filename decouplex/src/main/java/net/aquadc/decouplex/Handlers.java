@@ -25,10 +25,11 @@ final class Handlers {
     /**
      * handlers management
      */
-    private static final SimpleArrayMap<Class, Reference<HandlerSet>> handlerSets = new SimpleArrayMap<>();
+    private static final SimpleArrayMap<String, Reference<HandlerSet>> handlerSets = new SimpleArrayMap<>();
 
-    static HandlerSet forClass(Class target) {
-        Reference<HandlerSet> setRef = handlerSets.get(target);
+    static HandlerSet forClass(Class face, Class target) {
+        String key = face.getName() + '|' + target.getName();
+        Reference<HandlerSet> setRef = handlerSets.get(key);
         if (setRef != null) {
             HandlerSet set = setRef.get();
             if (set != null) {
@@ -42,27 +43,31 @@ final class Handlers {
         Handlers errorHandlers = new Handlers();
 
         for (Method method : target.getDeclaredMethods()) {
-            OnResult onResult = method.getAnnotation(OnResult.class);
-            if (onResult != null) {
-                if (onResult.face() == Void.class) {
-                    add(resultHandlers, method, onResult.value());
-                } else if (onResult.face() == target) { // todo: test targeting
-                    add(targetedResultHandlers, method, onResult.value());
+            {
+                OnResult onResult = method.getAnnotation(OnResult.class);
+                if (onResult != null) {
+                    if (onResult.face() == face) {
+                        add(targetedResultHandlers, method, onResult.value());
+                    } else if (onResult.face() == Void.class) {
+                        add(resultHandlers, method, onResult.value());
+                    }
                 }
             }
 
-            OnError onError = method.getAnnotation(OnError.class);
-            if (onError != null) {
-                if (onError.face() == Void.class) {
-                    add(errorHandlers, method, onError.value());
-                } else if (onError.face() == target) {
-                    add(targetedErrorHandlers, method, onError.value());
+            {
+                OnError onError = method.getAnnotation(OnError.class);
+                if (onError != null) {
+                    if (onError.face() == face) {
+                        add(targetedErrorHandlers, method, onError.value());
+                    } else if (onError.face() == Void.class) {
+                        add(errorHandlers, method, onError.value());
+                    }
                 }
             }
         }
 
         HandlerSet set = new HandlerSet(targetedResultHandlers, resultHandlers, targetedErrorHandlers, errorHandlers);
-        handlerSets.put(target, new WeakReference<>(set));
+        handlerSets.put(key, new WeakReference<>(set));
         return set;
     }
 

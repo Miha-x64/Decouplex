@@ -107,7 +107,7 @@ public final class DecouplexReceiver extends BroadcastReceiver {
         args.add(executionFail);
 
         try {
-            Method handler = HandlerSet.forMethod(req.methodName, false, handlerClass);
+            Method handler = HandlerSet.forMethod(req.face, req.methodName, false, handlerClass);
 
             handler.setAccessible(true);
 

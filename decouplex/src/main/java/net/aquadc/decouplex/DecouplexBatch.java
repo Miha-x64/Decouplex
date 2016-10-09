@@ -138,7 +138,7 @@ public final class DecouplexBatch<HANDLER> {
 
         String method = TextUtils.join(", ", methods);
 
-        Method handler = HandlerSet.forMethod(method, true, handlerClass);
+        Method handler = HandlerSet.forMethod(Void.class, method, true, handlerClass);
         handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
         try {

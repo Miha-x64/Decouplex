@@ -23,13 +23,14 @@ final class HandlerSet {
 
     /**
      * find handler for the method result
+     * @param face          the interface on which the method has been invoked on
      * @param methodName    the name of method that has been invoked
      * @param forResult     search result handlers; search error handlers if false
      * @param handlerClass  class where handlers coming from
      * @return Method to handle response
      */
-    static Method forMethod(String methodName, boolean forResult, Class<?> handlerClass) {
-        HandlerSet h = Handlers.forClass(handlerClass);
+    static Method forMethod(Class face, String methodName, boolean forResult, Class<?> handlerClass) {
+        HandlerSet h = Handlers.forClass(face, handlerClass);
         Handlers classified = forResult ? h.classifiedResultHandlers : h.classifiedErrorHandlers;
         Method handler = classified.forName(methodName);
         if (handler != null)
