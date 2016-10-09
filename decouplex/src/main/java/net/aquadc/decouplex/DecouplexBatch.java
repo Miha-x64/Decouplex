@@ -141,8 +141,12 @@ public final class DecouplexBatch<HANDLER> {
         Method handler = HandlerSet.forMethod(Void.class, method, true, handlerClass);
         handler.setAccessible(true); // protected methods are inaccessible by default O_o
 
+        Set<Object> resultSet = new HashSet<>();
+        for (Set<?> set : resultSets) {
+            resultSet.addAll(set);
+        }
         try {
-            handler.invoke(resultHandler, arguments(handler.getParameterTypes(), resultSets));
+            handler.invoke(resultHandler, arguments(handler, resultSet));
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

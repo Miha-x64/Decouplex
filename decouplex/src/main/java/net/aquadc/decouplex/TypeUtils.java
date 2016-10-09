@@ -2,8 +2,10 @@ package net.aquadc.decouplex;
 
 import android.support.v4.util.SimpleArrayMap;
 
+import net.aquadc.decouplex.annotation.DcxNullable;
+
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
-import java.util.List;
 import java.util.Set;
 
 /**
@@ -113,16 +115,39 @@ import java.util.Set;
         return types.toArray(classes);
     }*/
 
-    /*package*/ static Object[] arguments(Method handlerMethod, Set<Object> args) {
+    // eats args!
+    /*package*/ static Object[] arguments(Method handlerMethod, Set<?> args) {
         Class[] types = handlerMethod.getParameterTypes();
-        Object[] params = new Object[types.length];
-        for (int i = 0; i < types.length; i++) {
+        final int size = types.length;
+        boolean[] nullables = null;
+        {
+            Annotation[][] annotations = handlerMethod.getParameterAnnotations();
+            for (int i = 0; i < size; i++) {
+                for (Annotation ann : annotations[i]) {
+                    if (ann.annotationType() == DcxNullable.class) {
+                        if (nullables == null) {
+                            nullables = new boolean[size];
+                        }
+                        nullables[i] = true;
+                        break;
+                    }
+                }
+            }
+        }
+        Object[] params = new Object[size];
+        for (int i = 0; i < size; i++) {
+            // first, go through non-nullable args
+            if (nullables != null && nullables[i]) {
+                continue;
+            }
+
             Class type = types[i];
             Object arg = null;
             for (Object o : args) {
                 if (type.isInstance(o) ||
                         (type.isPrimitive() && wrappers.get(type).isInstance(o))) {
                     arg = o;
+                    args.remove(o);
                     break;
                 }
             }
@@ -131,29 +156,26 @@ import java.util.Set;
             }
             params[i] = arg;
         }
-        return params;
-    }
 
-    /*package*/ static Object[] arguments(Class[] types, List<Set<Object>> args) {
-        Object[] params = new Object[types.length];
-        for (int i = 0; i < types.length; i++) {
-            Class type = types[i];
-            Object arg = null;
-            outer:
-            for (Set<Object> so : args) {
-                for (Object o : so) {
+        if (nullables != null) {
+            // go through nullable arguments then
+            for (int i = 0; i < size; i++) {
+                if (!nullables[i]) {
+                    continue;
+                }
+
+                Class type = types[i];
+                for (Object o : args) {
                     if (type.isInstance(o) ||
                             (type.isPrimitive() && wrappers.get(type).isInstance(o))) {
-                        arg = o;
-                        break outer;
+                        params[i] = o;
+                        args.remove(o);
+                        break;
                     }
                 }
             }
-            if (arg == null) {
-                throw new IllegalArgumentException("can't find applicable argument of type " + type);
-            }
-            params[i] = arg;
         }
+
         return params;
     }
 
