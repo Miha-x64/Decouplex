@@ -3,9 +3,18 @@ Decoupled executor — the easiest &amp; type-safe way to run code in Android se
 
 #### Include via Gradle ####
 
-[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion) — just Decouplex: `compile 'net.aquadc.decouplex:decouplex:0.0.2'`
+##### Just Decouplex #####
 
-[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion) — DecouplexRetrofit: `compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.2'`
+[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion)
+[ ![Methods count](https://img.shields.io/badge/Methods count-core: 504 | deps: 15953-e91e63.svg) ](http://www.methodscount.com/?lib=net.aquadc.decouplex%3Adecouplex%3A%2B)
+
+`compile 'net.aquadc.decouplex:decouplex:0.0.2'`
+
+
+##### DecouplexRetrofit — adapter for Retrofit #####
+[ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion)
+
+`compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.2'`
 
 #### To do in next releases ####
 
