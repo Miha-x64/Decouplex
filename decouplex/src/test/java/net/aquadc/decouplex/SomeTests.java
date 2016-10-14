@@ -21,7 +21,7 @@ import static org.junit.Assert.*;
  */
 @RunWith(RobolectricTestRunner.class)
 @Config(constants = BuildConfig.class, sdk = 23)
-public class TargetingTests {
+public class SomeTests {
 
     @Test
     public void methodTargetingTest() {

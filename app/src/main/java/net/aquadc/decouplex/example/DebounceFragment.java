@@ -50,6 +50,7 @@ public class DebounceFragment extends DecouplexFragmentCompat implements TextWat
         outputView.setText(output);
     }
 
+    @FunctionalInterface
     interface QueryHandler {
         @Debounce(300)
         String handle(String input);

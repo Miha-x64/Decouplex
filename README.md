@@ -10,17 +10,18 @@ Decoupled executor — the easiest &amp; type-safe way to run code in Android se
 #### To do in next releases ####
 
 - Support DecouplexBatchRequest.retry & document DecouplexBatch;
-- Allow some methods to be called without result or error delivery;
 - Develop `REMOTE` `DeliveryStrategy` to use implementation that runs in another process;
-- Static factory with default parameter values to use in Kotlin without Builder.
+- Static factory with default parameter values to use in Kotlin without Builder;
+- Eager validation.
 
 #### Currently developing 0.0.3 ####
-- Support nullable @OnResult and @OnError methods' arguments;
+- Support nullable `@OnResult` and `@OnError` methods' arguments by means of `@DcxNullable` annotation;
+- Allow some methods to be called without result or error delivery;
 
 #### What's new in 0.0.2 ####
 
-- DeliveryStrategy: a way to transfer arguments from Fragment to Service.
-The only one is available for now — `DeliveryStrategy.LOCAL`.
+- DeliveryStrategy: a way to transfer arguments from UI to Service.
+The only one is available for now — `DeliveryStrategies.LOCAL`.
 Method arguments and return value will now be transferred out of Bundle and there's
 no need for them to be Parcelable;
 - Adapters' API changed: they aren't dependent on Bundle any more;
@@ -98,7 +99,7 @@ You have to add service in manifest:
 
 When your class does not extend DecouplexActivity or DecouplexFragment,
 you can register & unregister BroadcastReceiver wherever you need:
-in onCreate/onDestroy, onStart/onStop or onResume/onPause.
+in onCreate/onDestroy, onStart/onStop, or onResume/onPause.
 
 ```java
 class MyClass extends Fragment or Activity {

@@ -138,7 +138,7 @@
   @net.aquadc.decouplex.annotation.OnResult <methods>;
 }
 -keepclasseswithmembers class * {
-    @net.aquadc.decouplex.annotation.OnError <methods>;
+  @net.aquadc.decouplex.annotation.OnError <methods>;
 }
 
 # debug only

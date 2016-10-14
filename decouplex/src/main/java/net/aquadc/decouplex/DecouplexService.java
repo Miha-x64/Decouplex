@@ -31,13 +31,13 @@ import static net.aquadc.decouplex.DcxRequest.broadcast;
  * Created by miha on 14.05.16.
  *
  */
-public final class DcxService extends IntentService {
+public final class DecouplexService extends IntentService {
 
     static final SimpleArrayMap<String, ScheduledFuture<?>> debounced = new SimpleArrayMap<>(4);
     private static final Collection<Executor> executors = new HashSet<>(4);
 
-    public DcxService() {
-        super(DcxService.class.getSimpleName());
+    public DecouplexService() {
+        super(DecouplexService.class.getSimpleName());
     }
 
     @Override
@@ -122,20 +122,22 @@ public final class DcxService extends IntentService {
                             int j = 0;
                             for (Future<Pair<Boolean, DcxResponse>> future : futures) {
                                 Pair<Boolean, DcxResponse> result = future.get();
-                                if (result.first) {
-                                    String n = Integer.toString(j);
-                                    resp.putParcelable(n,
-                                            result.second.request.deliveryStrategy.transferResponse(result.second));
-                                    resp.putString("strategy" + n, result.second.request.deliveryStrategy.name());
-                                } else {
-                                    Log.e("DecouplexService", "Broadcasting error from batch.");
-                                    broadcast(DcxService.this, ACTION_ERR + bun.get("receiver"), result.second);
-                                    return;
+                                if (result.second != null) {
+                                    if (result.first) {
+                                        String n = Integer.toString(j);
+                                        resp.putParcelable(n,
+                                                result.second.request.deliveryStrategy.transferResponse(result.second));
+                                        resp.putString("strategy" + n, result.second.request.deliveryStrategy.name());
+                                    } else {
+                                        Log.e("DecouplexService", "Broadcasting error from batch.");
+                                        broadcast(DecouplexService.this, ACTION_ERR + bun.get("receiver"), result.second);
+                                        return;
+                                    }
                                 }
                                 j++;
                             }
                             resp.putInt("id", id);
-                            broadcast(DcxService.this, ACTION_RESULT_BATCH + bun.get("receiver"), resp);
+                            broadcast(DecouplexService.this, ACTION_RESULT_BATCH + bun.get("receiver"), resp);
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }

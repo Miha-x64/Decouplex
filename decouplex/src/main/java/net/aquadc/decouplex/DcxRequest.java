@@ -13,6 +13,7 @@ import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
+import net.aquadc.decouplex.annotation.DcxDelivery;
 import net.aquadc.decouplex.annotation.Debounce;
 import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
@@ -99,22 +100,24 @@ public final class DcxRequest {
     }
 
     static void startExecService(Context context, Bundle extras) {
-        Intent service = new Intent(context, DcxService.class);
+        Intent service = new Intent(context, DecouplexService.class);
         service.setAction(DcxInvocationHandler.ACTION_EXEC);
         service.putExtras(extras);
 
         if (context.startService(service) == null) {
-            throw new IllegalStateException("Did you forget to declare " + DcxService.class.getSimpleName() + " in your manifest?");
+            throw new IllegalStateException("Did you forget to declare " + DecouplexService.class.getSimpleName() + " in your manifest?");
         }
     }
 
     @WorkerThread
     void executeAndBroadcast(Context con, String bReceiver) {
         Pair<Boolean, DcxResponse> result = execute();
-        if (result.first) { // success
-            broadcast(con, ACTION_RESULT + bReceiver, result.second);
-        } else {
-            broadcast(con, ACTION_ERR + bReceiver, result.second);
+        if (result.second != null) {
+            if (result.first) { // success
+                broadcast(con, ACTION_RESULT + bReceiver, result.second);
+            } else { // error
+                broadcast(con, ACTION_ERR + bReceiver, result.second);
+            }
         }
     }
 
@@ -147,6 +150,12 @@ public final class DcxRequest {
         }
     }
 
+    /**
+     * Executes this request.
+     *
+     * @return a tuple of {@code Boolean} success and {@code DcxResponse?} response.
+     * Response will be null if its delivery is not required.
+     */
     Pair<Boolean, DcxResponse> execute() {
         Method method;
         Object[] params = parameters;
@@ -159,17 +168,24 @@ public final class DcxRequest {
             throw new RuntimeException(e);
         }
 
+        DcxDelivery delivery = method.getAnnotation(DcxDelivery.class);
         try {
             Object result = method.invoke(impl, params);
             if (resultProcessor != null) {
                 result = resultProcessor.process(face, method, params, result);
             }
-            return new Pair<>(true, new DcxResponse(this, result));
+            return new Pair<>(true,
+                    delivery == null || delivery.deliverResult()
+                            ? new DcxResponse(this, result)
+                            : null);
         } catch (Throwable e) {
             if (errorProcessor != null) {
                 errorProcessor.process(face, method, params, e);
             }
-            return new Pair<>(false, new DcxResponse(this, e));
+            return new Pair<>(false,
+                    delivery == null || delivery.deliverError()
+                            ? new DcxResponse(this, e)
+                            : null);
         }
     }
 }
