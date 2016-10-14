@@ -76,16 +76,17 @@ public final class DcxRequest {
         StringBuilder bu = new StringBuilder("DecouplexRequest:");
         bu.append(methodName).append('(');
         for (Object param : parameters) {
-            bu.append(param);
+            bu.append(param).append(", ");
         }
         bu.append(')');
         return bu.toString();
     }
 
     Bundle prepare(@Nullable Debounce debounce) {
-        Bundle data = new Bundle(debounce == null ? 2 : 3);
+        boolean debounced = debounce != null && debounce.value() > 0;
+        Bundle data = new Bundle(debounced ? 3 : 2);
 
-        if (debounce != null) {
+        if (debounced) {
             data.putInt("debounce", (int) debounce.unit().toMillis(debounce.value()));
         }
 
@@ -103,7 +104,7 @@ public final class DcxRequest {
         service.putExtras(extras);
 
         if (context.startService(service) == null) {
-            throw new IllegalStateException("Did you forget to declare DecouplexService in your manifest?");
+            throw new IllegalStateException("Did you forget to declare " + DcxService.class.getSimpleName() + " in your manifest?");
         }
     }
 
@@ -149,38 +150,26 @@ public final class DcxRequest {
     Pair<Boolean, DcxResponse> execute() {
         Method method;
         Object[] params = parameters;
+        final Class<?> face = this.face;
         try {
             method = face.getDeclaredMethod(methodName, parameterTypes);
+        } catch (RuntimeException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
 
         try {
-            DcxResponse resp = execute(method, params);
-            return new Pair<>(true, resp);
+            Object result = method.invoke(impl, params);
+            if (resultProcessor != null) {
+                result = resultProcessor.process(face, method, params, result);
+            }
+            return new Pair<>(true, new DcxResponse(this, result));
         } catch (Throwable e) {
-            DcxResponse resp = error(this, e, method, params);
-            return new Pair<>(false, resp);
+            if (errorProcessor != null) {
+                errorProcessor.process(face, method, params, e);
+            }
+            return new Pair<>(false, new DcxResponse(this, e));
         }
-    }
-
-    private DcxResponse execute(Method method, Object[] params) throws Exception {
-        Object result = method.invoke(impl, params);
-
-        if (resultProcessor != null) {
-            result = resultProcessor.process(face, method, params, result);
-        }
-
-        return new DcxResponse(this, result);
-    }
-
-    private DcxResponse error(DcxRequest req, Throwable e, Method method, Object[] params) {
-        DcxResponse response = new DcxResponse(req, e);
-
-        if (errorProcessor != null) {
-            errorProcessor.process(face, method, params, e);
-        }
-
-        return response;
     }
 }

@@ -6,13 +6,14 @@ import net.aquadc.decouplex.annotation.DcxNullable;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.util.Collection;
 import java.util.Set;
 
 /**
  * Created by miha on 14.05.16.
  *
  */
-/*package*/ final class TypeUtils {
+/*package*/ final class TypeUtils { // rename me
 
     private TypeUtils() {
         throw new AssertionError();
@@ -116,7 +117,7 @@ import java.util.Set;
     }*/
 
     // eats args!
-    /*package*/ static Object[] arguments(Method handlerMethod, Set<?> args) {
+    /*package*/ static Object[] arguments(Method handlerMethod, Collection<?> args) {
         Class[] types = handlerMethod.getParameterTypes();
         final int size = types.length;
         boolean[] nullables = null;
@@ -135,6 +136,7 @@ import java.util.Set;
             }
         }
         Object[] params = new Object[size];
+        SimpleArrayMap<Class, Class> wrappers = TypeUtils.wrappers;
         for (int i = 0; i < size; i++) {
             // first, go through non-nullable args
             if (nullables != null && nullables[i]) {

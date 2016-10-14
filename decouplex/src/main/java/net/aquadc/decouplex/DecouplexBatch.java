@@ -14,6 +14,7 @@ import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -43,7 +44,7 @@ public final class DecouplexBatch<HANDLER> {
 
     private final int id;
     private final Class<HANDLER> handlerClass;
-    private final ThreadLocal<List<Request>> requestsLoc = new ThreadLocal<>();
+    final ThreadLocal<List<Request>> requestsLoc = new ThreadLocal<>();
 
     public DecouplexBatch(Class<HANDLER> handlerClass) {
         this.handlerClass = handlerClass;
@@ -100,7 +101,7 @@ public final class DecouplexBatch<HANDLER> {
         service.putExtras(batch);
 
         if (context.startService(service) == null) {
-            throw new IllegalStateException("Did you forget to declare DecouplexService in your manifest?");
+            throw new IllegalStateException("Did you forget to declare DcxService in your manifest?");
         }
         requests.clear();
     }
@@ -112,21 +113,22 @@ public final class DecouplexBatch<HANDLER> {
      */
     @UiThread
     void dispatchResults(HANDLER resultHandler, Bundle results) {
-        List<String> methods = new ArrayList<>(3);
-        List<Set<Object>> resultSets = new ArrayList<>(3);
+        Collection<String> methods = new ArrayList<>(3);
+        Collection<Set<Object>> resultSets = new ArrayList<>(3);
         int i = 0;
         while (true) {
             String n = Integer.toString(i);
             String strategyName = results.getString("strategy" + n);
-            if (strategyName == null)
+            if (strategyName == null) {
                 break;
+            }
             DeliveryStrategy strategy = DeliveryStrategies.forName(strategyName);
             DcxResponse response = strategy.obtainResponse(results.getParcelable(n));
 
             String method = response.request.methodName;
             methods.add(method);
 
-            HashSet<Object> args = new HashSet<>(2);
+            Set<Object> args = new HashSet<>(2);
             args.add(response.result);
             if (response.request.resultAdapter != null) {
                 response.request.resultAdapter.adapt(response.request.face, method, null, response.result, args);

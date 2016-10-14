@@ -5,6 +5,7 @@
       <module fileurl="file://$PROJECT_DIR$/Decouplex.iml" filepath="$PROJECT_DIR$/Decouplex.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
       <module fileurl="file://$PROJECT_DIR$/decouplex/decouplex.iml" filepath="$PROJECT_DIR$/decouplex/decouplex.iml" />
+      <module fileurl="file://$PROJECT_DIR$/decouplexRemote/decouplexRemote.iml" filepath="$PROJECT_DIR$/decouplexRemote/decouplexRemote.iml" />
       <module fileurl="file://$PROJECT_DIR$/decouplexRetrofit/decouplexRetrofit.iml" filepath="$PROJECT_DIR$/decouplexRetrofit/decouplexRetrofit.iml" />
     </modules>
   </component>

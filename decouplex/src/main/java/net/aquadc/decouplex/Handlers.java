@@ -72,7 +72,7 @@ final class Handlers {
     }
 
     private static void add(Handlers handlers, Method method, String methodName) {
-        if (methodName.equals("*")) {
+        if ("*".equals(methodName)) {
             if (handlers.fallback != null) {
                 throw new IllegalStateException("ambiguous * handlers: " + handlers.fallback + " and " + method);
             }
@@ -96,8 +96,9 @@ final class Handlers {
 
     Method forName(String methodName) {
         Method handler = immediateHandlers.get(methodName);
-        if (handler != null)
+        if (handler != null) {
             return handler;
+        }
 
         SimpleArrayMap<String, Method> wildcardHandlers = this.wildcardHandlers;
         int size = wildcardHandlers.size();

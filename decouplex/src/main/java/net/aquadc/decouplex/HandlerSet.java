@@ -33,13 +33,15 @@ final class HandlerSet {
         HandlerSet h = Handlers.forClass(face, handlerClass);
         Handlers classified = forResult ? h.classifiedResultHandlers : h.classifiedErrorHandlers;
         Method handler = classified.forName(methodName);
-        if (handler != null)
+        if (handler != null) {
             return handler;
+        }
 
         Handlers unclassified = forResult ? h.resultHandlers : h.errorHandlers;
         handler = unclassified.forName(methodName);
-        if (handler != null)
+        if (handler != null) {
             return handler;
+        }
 
         throw new RuntimeException("handler for result of method '" + methodName +
                 "' not found in class " + handlerClass.getSimpleName() + '.');

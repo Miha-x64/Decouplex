@@ -1,7 +1,5 @@
 package net.aquadc.decouplex;
 
-import android.support.annotation.Nullable;
-
 import net.aquadc.decouplex.annotation.DcxNullable;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;

@@ -38,7 +38,7 @@ public class DeliveryStrategies {
         public DcxRequest obtainRequest(Parcelable data) {
             DcxRequest request = requests.remove(((ParcelUuid) data).getUuid());
             if (request == null) {
-                throw new NullPointerException();
+                throw new NullPointerException("Looks like an internal error.");
             }
             return request;
         }
@@ -54,7 +54,7 @@ public class DeliveryStrategies {
         public DcxResponse obtainResponse(Parcelable data) {
             DcxResponse response = responses.remove(((ParcelUuid) data).getUuid());
             if (response == null) {
-                throw new NullPointerException();
+                throw new NullPointerException("Looks like an internal error.");
             }
             return response;
         }

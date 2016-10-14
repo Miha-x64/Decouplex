@@ -7,5 +7,5 @@ import java.lang.reflect.Method;
  */
 public interface ResultProcessor {
     Object process(Class face, Method method,
-                   Object[] args, Object result) throws Exception;
+                   Object[] args, Object result) throws Throwable;
 }

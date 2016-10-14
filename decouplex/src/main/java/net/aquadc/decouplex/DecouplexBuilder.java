@@ -17,9 +17,9 @@ import java.lang.reflect.Proxy;
  */
 public final class DecouplexBuilder<FACE, HANDLER> {
 
-    private Class face;
-    private FACE impl;
-    private Class<HANDLER> handler;
+    private final Class face;
+    private final FACE impl;
+    private final Class<HANDLER> handler;
     private int threads = 1;
 
     private ResultProcessor resultProcessor;
@@ -32,17 +32,19 @@ public final class DecouplexBuilder<FACE, HANDLER> {
 
     public DecouplexBuilder(@NonNull Class<FACE> face, @NonNull FACE impl, @NonNull Class<HANDLER> handler) {
         // noinspection ConstantConditions
-        if (face == null)
+        if (face == null) {
             throw new NullPointerException("interface required, null given");
-        if (!face.isInterface())
-            throw new IllegalArgumentException("interface required");
+        }
+        if (!face.isInterface()) {
+            throw new IllegalArgumentException("interface required, class given");
+        }
         // noinspection ConstantConditions
         if (impl == null) {
             throw new NullPointerException("interface implementation required, null given");
         }
         // noinspection ConstantConditions
         if (handler == null) {
-            throw new NullPointerException("handler class require, null given");
+            throw new NullPointerException("handler class required, null given");
         }
         this.face = face;
         this.impl = impl;
@@ -110,7 +112,7 @@ public final class DecouplexBuilder<FACE, HANDLER> {
         if (context == null) {
             throw new NullPointerException("Null context given. How am I supposed to start service?");
         }
-
+        final Class<FACE> face = this.face;
         return (FACE) Proxy.newProxyInstance(
                 face.getClassLoader(), new Class[]{face},
                 new DcxInvocationHandler<>(context.getApplicationContext(),

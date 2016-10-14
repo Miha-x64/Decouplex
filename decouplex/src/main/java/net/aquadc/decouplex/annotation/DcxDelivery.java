@@ -7,8 +7,12 @@ import java.lang.annotation.Target;
 
 /**
  * Created by miha on 09.10.16
+ *
+ * You can ignore result or error of method invocation.
  */
-@Target(ElementType.PARAMETER)
+@Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface DcxNullable {
+public @interface DcxDelivery {
+    boolean deliverResult() default true;
+    boolean deliverError() default true;
 }

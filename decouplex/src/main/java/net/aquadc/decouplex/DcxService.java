@@ -12,9 +12,8 @@ import net.aquadc.decouplex.delivery.DeliveryStrategies;
 import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -35,7 +34,7 @@ import static net.aquadc.decouplex.DcxRequest.broadcast;
 public final class DcxService extends IntentService {
 
     static final SimpleArrayMap<String, ScheduledFuture<?>> debounced = new SimpleArrayMap<>(4);
-    private static final Set<Executor> executors = new HashSet<>(4);
+    private static final Collection<Executor> executors = new HashSet<>(4);
 
     public DcxService() {
         super(DcxService.class.getSimpleName());
@@ -85,13 +84,14 @@ public final class DcxService extends IntentService {
             }
             case ACTION_EXEC_BATCH: {
                 final Bundle bun = intent.getExtras();
-                final List<Future<Pair<Boolean, DcxResponse>>> futures = new ArrayList<>(4);
+                final Collection<Future<Pair<Boolean, DcxResponse>>> futures = new ArrayList<>(4);
                 int i = 0;
                 Executor exec = null;
                 while (true) {
                     final Bundle req = bun.getBundle(Integer.toString(i));
-                    if (req == null)
+                    if (req == null) {
                         break;
+                    }
 
                     DeliveryStrategy deliveryStrategy = DeliveryStrategies.forName(req.getString("deliveryStrategy"));
                     final DcxRequest request = deliveryStrategy.obtainRequest(req.getParcelable("request"));
@@ -107,8 +107,9 @@ public final class DcxService extends IntentService {
                     i++;
                 }
 
-                if (exec == null)
+                if (exec == null) {
                     return; // WAT?
+                }
 
                 final int id = bun.getInt("id");
 
@@ -116,9 +117,9 @@ public final class DcxService extends IntentService {
                 exec.submit(new Runnable() {
                     @Override
                     public void run() {
-                        int j = 0;
                         try {
                             Bundle resp = new Bundle();
+                            int j = 0;
                             for (Future<Pair<Boolean, DcxResponse>> future : futures) {
                                 Pair<Boolean, DcxResponse> result = future.get();
                                 if (result.first) {

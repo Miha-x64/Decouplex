@@ -1,4 +1,4 @@
-package net.aquadc.decouplex;
+package net.aquadc.decouplex.remote;
 
 import android.os.BaseBundle;
 import android.os.Build;

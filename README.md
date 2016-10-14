@@ -9,11 +9,13 @@ Decoupled executor — the easiest &amp; type-safe way to run code in Android se
 
 #### To do in next releases ####
 
-- Support nullable @OnResult & @OnError methods' arguments;
 - Support DecouplexBatchRequest.retry & document DecouplexBatch;
 - Allow some methods to be called without result or error delivery;
 - Develop `REMOTE` `DeliveryStrategy` to use implementation that runs in another process;
 - Static factory with default parameter values to use in Kotlin without Builder.
+
+#### Currently developing 0.0.3 ####
+- Support nullable @OnResult and @OnError methods' arguments;
 
 #### What's new in 0.0.2 ####
 

@@ -2,7 +2,6 @@ package net.aquadc.decouplex;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.annotation.UiThread;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
@@ -13,10 +12,6 @@ import net.aquadc.decouplex.delivery.DeliveryStrategy;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.util.HashSet;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static net.aquadc.decouplex.TypeUtils.*;
 
 /**
  * Created by miha on 14.05.16.
@@ -34,15 +29,8 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
     static final String ACTION_ERR = "DECOUPLEX_ERR";
 
     /**
-     * Instances management
-     */
-    private static AtomicInteger instancesCount = new AtomicInteger();
-
-    /**
      * instance
      */
-    private final int id;
-
     private final Context context;
 
     final Class<FACE> face; // access needed by Batch
@@ -59,7 +47,7 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
     private final DeliveryStrategy deliveryStrategy;
 
     private final Class<HANDLER> handler;
-    private HandlerSet handlers; // just a strong reference
+    private final HandlerSet handlers; // just a strong reference
 
     DcxInvocationHandler(Context context,
                          Class<FACE> face, FACE impl, Class<HANDLER> handler, int threads,
@@ -84,8 +72,6 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
 
         this.deliveryStrategy = deliveryStrategy;
         this.handlers = Handlers.forClass(face, handler);
-
-        id = instancesCount.incrementAndGet();
     }
 
     /**
@@ -100,8 +86,9 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
         DcxRequest.startExecService(context, prepareRequest(method, args));
 
-        if (method.getReturnType().isPrimitive())
+        if (method.getReturnType().isPrimitive()) {
             return 0;
+        }
         return null;
     }
 
@@ -117,11 +104,6 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
                         handler);
 
         return request.prepare(method.getAnnotation(Debounce.class));
-    }
-
-    @Override
-    public int hashCode() {
-        return id;
     }
 
     @SuppressWarnings("Since15")

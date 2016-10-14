@@ -1,1 +1,1 @@
-include ':app', ':decouplex', ':decouplexRetrofit'
+include ':app', ':decouplex', ':decouplexRetrofit', ':decouplexRemote'

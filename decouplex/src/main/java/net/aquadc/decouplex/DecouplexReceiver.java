@@ -1,26 +1,20 @@
 package net.aquadc.decouplex;
 
-import android.annotation.SuppressLint;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.UiThread;
 import android.support.v4.content.LocalBroadcastManager;
 
-import net.aquadc.decouplex.adapter.ErrorAdapter;
 import net.aquadc.decouplex.delivery.DeliveryStrategies;
 import net.aquadc.decouplex.delivery.DeliveryStrategy;
-
-import java.lang.reflect.Method;
-import java.util.HashSet;
 
 import static net.aquadc.decouplex.DcxInvocationHandler.ACTION_ERR;
 import static net.aquadc.decouplex.DcxInvocationHandler.ACTION_RESULT;
 import static net.aquadc.decouplex.DcxInvocationHandler.ACTION_RESULT_BATCH;
-import static net.aquadc.decouplex.TypeUtils.arguments;
 
 /**
  * Created by miha on 24.05.16.
@@ -62,9 +56,9 @@ public final class DecouplexReceiver extends BroadcastReceiver {
         } else if (actionError.equals(action)) {
             DeliveryStrategy strategy = DeliveryStrategies.forName(resp.getString("deliveryStrategy"));
             DcxResponse res = strategy.obtainResponse(resp.getParcelable("response"));
-            dispatchError(res.request.errorAdapter, res.request.face,
+            res.dispatchError(res.request.errorAdapter, res.request.face,
                     res.request.fallbackErrorHandler, res.request.handler,
-                    resultHandler, res);
+                    resultHandler);
         }
     }
 
@@ -78,54 +72,17 @@ public final class DecouplexReceiver extends BroadcastReceiver {
         LocalBroadcastManager.getInstance(con).unregisterReceiver(this);
     }
 
-    @SuppressLint("NewApi")
     private static Context getContext(Object o) {
-        if (o instanceof Context)
+        if (o instanceof Context) {
             return (Context) o;
-        else if (o instanceof android.support.v4.app.Fragment)
-            return ((android.support.v4.app.Fragment) o).getActivity();
-        else if (o instanceof android.app.Fragment)
-            return ((Fragment) o).getActivity();
-        throw new IllegalStateException("can't get context from " + o);
-    }
-
-    /**
-     * Acts as dispatchResult, but for errors.
-     * @param resultHandler    object who is ready to handle result
-     * @param resp             response
-     */
-    @UiThread
-    static void dispatchError(ErrorAdapter errorAdapter, Class<?> face,
-                              DcxInvocationHandler.ErrorHandler fallbackErrorHandler,
-                              Class<?> handlerClass,
-                              Object resultHandler, DcxResponse resp) {
-        Throwable executionFail = (Throwable) resp.result;
-
-        DcxRequest req = resp.request;
-        HashSet<Object> args = new HashSet<>(2);
-        args.add(req);
-        args.add(executionFail);
-
-        try {
-            Method handler = HandlerSet.forMethod(req.face, req.methodName, false, handlerClass);
-
-            handler.setAccessible(true);
-
-            if (errorAdapter != null) {
-                errorAdapter.adapt(face, req.methodName, handler, executionFail, resp, args);
-            }
-
-            handler.invoke(resultHandler, arguments(handler, args));
-        } catch (Throwable deliveryFail) {
-            if (fallbackErrorHandler == null) {
-                if (deliveryFail instanceof RuntimeException) {
-                    throw (RuntimeException) deliveryFail; // don't create a new one
-                }
-                throw new RuntimeException(deliveryFail);
-            } else {
-                fallbackErrorHandler.onError(req, executionFail);
-            }
         }
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB && o instanceof Fragment) {
+            return ((Fragment) o).getActivity();
+        }
+        if (o instanceof android.support.v4.app.Fragment) {
+            return ((android.support.v4.app.Fragment) o).getActivity();
+        }
+        throw new IllegalStateException("can't get context from " + o);
     }
 
 }
