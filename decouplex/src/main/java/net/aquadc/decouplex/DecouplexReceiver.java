@@ -1,5 +1,6 @@
 package net.aquadc.decouplex;
 
+import android.app.Activity;
 import android.app.Fragment;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -28,17 +29,30 @@ public final class DecouplexReceiver extends BroadcastReceiver {
     private final String actionError;
     private final IntentFilter filter;
 
-    public DecouplexReceiver(Object resultHandler) {
+    public DecouplexReceiver(Activity activity) {
+        this((Object) activity);
+    }
+
+    public DecouplexReceiver(Fragment fragment) {
+        this((Object) fragment);
+    }
+
+    public DecouplexReceiver(android.support.v4.app.Fragment fragment) {
+        this((Object) fragment);
+    }
+
+    private DecouplexReceiver(Object resultHandler) {
         this.resultHandler = resultHandler;
         String id = '_' + resultHandler.getClass().getSimpleName();
         actionResult = ACTION_RESULT + id;
         actionResultBatch = ACTION_RESULT_BATCH + id;
         actionError = ACTION_ERR + id;
 
-        filter = new IntentFilter();
+        IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_RESULT + id);
         filter.addAction(ACTION_RESULT_BATCH + id);
         filter.addAction(ACTION_ERR + id);
+        this.filter = filter;
     }
 
     @Override

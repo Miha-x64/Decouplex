@@ -18,14 +18,16 @@ import net.aquadc.decouplex.annotation.OnResult;
 /**
  * Created by miha on 17.08.16
  */
-public class DebounceFragment extends DecouplexFragmentCompat implements TextWatcher {
+public final class DebounceFragment extends DecouplexFragmentCompat implements TextWatcher {
 
     private TextView outputView;
     private QueryHandler queryHandler;
 
     @Nullable @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        queryHandler = new DecouplexBuilder<>(QueryHandler.class, queryHandlerImpl, getClass()).create(getActivity());
+        queryHandler =
+                new DecouplexBuilder<>(QueryHandler.class, queryHandlerImpl, DebounceFragment.class)
+                        .create(getActivity());
         return inflater.inflate(R.layout.fragment_debounce, container, false);
     }
 

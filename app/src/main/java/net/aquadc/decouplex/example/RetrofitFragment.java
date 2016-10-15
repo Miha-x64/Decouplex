@@ -34,7 +34,9 @@ import retrofit2.converter.jackson.JacksonConverterFactory;
 /**
  * Created by miha on 24.05.16
  */
-public class RetrofitFragment extends DecouplexFragmentCompat implements View.OnClickListener {
+public final class RetrofitFragment
+        extends DecouplexFragmentCompat
+        implements View.OnClickListener {
 
     /**
      * Presenter
@@ -126,7 +128,7 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
 
             // configure Decouplex
             gitHubService = DecouplexRetrofit
-                    .retrofit2Builder(GitHubService.class, gitHubRetrofitService, getClass())
+                    .retrofit2Builder(GitHubService.class, gitHubRetrofitService, RetrofitFragment.class)
                     .fallbackErrorHandler((request, error) -> {
                         // Triggered when there's no appropriate error handling method.
                         // In this case — when fail() gets called.
@@ -137,10 +139,10 @@ public class RetrofitFragment extends DecouplexFragmentCompat implements View.On
 
             // configure another Decouplex
             longRunningTask =
-                    new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), getClass())
+                    new DecouplexBuilder<>(LongRunningTask.class, new LongRunningTaskImpl(), RetrofitFragment.class)
                             .create(getActivity());
 
-            batch = new DecouplexBatch<>(getClass());
+            batch = new DecouplexBatch<>(RetrofitFragment.class);
         }
     }
 
