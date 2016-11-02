@@ -6,7 +6,7 @@ Decoupled executor — the easiest &amp; type-safe way to run code in Android se
 ##### Just Decouplex #####
 
 [ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion)
-[ ![Methods count](https://img.shields.io/badge/Methods count-core: 504 | deps: 15953-e91e63.svg) ](http://www.methodscount.com/?lib=net.aquadc.decouplex%3Adecouplex%3A%2B)
+[ ![Methods count](https://img.shields.io/badge/Methods count-core: 245 | deps: 10358-e91e63.svg) ](http://www.methodscount.com/?lib=net.aquadc.decouplex%3Adecouplex%3A%2B)
 
 `compile 'net.aquadc.decouplex:decouplex:0.0.2'`
 
