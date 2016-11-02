@@ -1,6 +1,7 @@
 package net.aquadc.decouplex;
 
 import java.lang.reflect.Method;
+import java.util.NoSuchElementException;
 
 /**
  * Created by miha on 24.05.16.
@@ -43,7 +44,7 @@ final class HandlerSet {
             return handler;
         }
 
-        throw new RuntimeException("Can't find @On" + (forResult ? "Result" : "Error") +
+        throw new NoSuchElementException("Can't find @On" + (forResult ? "Result" : "Error") +
                 "-annotated method in class '" + handlerClass.getSimpleName() + "' to deliver method '" +
                 methodName + "' invocation result.");
     }

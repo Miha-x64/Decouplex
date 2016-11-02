@@ -1,12 +1,11 @@
 package net.aquadc.decouplex;
 
 import android.support.annotation.UiThread;
-import android.util.ArraySet;
 
-import net.aquadc.decouplex.adapter.ErrorAdapter;
-
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.HashSet;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import static net.aquadc.decouplex.TypeUtils.arguments;
@@ -50,10 +49,10 @@ public class DcxResponse {
             }
 
             handler.invoke(resultHandler, arguments(handler, args));
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (IllegalAccessException e) {
+            throw new AssertionError(e);
+        } catch (InvocationTargetException e) {
+            dispatchErrorInternal(e, resultHandler);
         }
     }
 
@@ -61,35 +60,47 @@ public class DcxResponse {
      * Acts as dispatchResult, but for errors.
      */
     @UiThread
-    void dispatchError(ErrorAdapter errorAdapter, Class<?> face,
-                              DcxInvocationHandler.ErrorHandler fallbackErrorHandler,
-                              Class<?> handlerClass,
-                              Object resultHandler) {
-        Throwable executionFail = (Throwable) result;
+    void dispatchError(Object resultHandler) {
+        dispatchErrorInternal((Throwable) result, resultHandler);
+    }
 
-        DcxRequest req = request;
+    private void dispatchErrorInternal(Throwable exception, Object resultHandler) {
         HashSet<Object> args = new HashSet<>(2);
-        args.add(req);
-        args.add(executionFail);
+        args.add(request);
+        args.add(exception);
 
         try {
-            Method handler = HandlerSet.forMethod(req.face, req.methodName, false, handlerClass);
+            Method handler = HandlerSet.forMethod(request.face, request.methodName, false, request.handler);
 
             handler.setAccessible(true);
 
-            if (errorAdapter != null) {
-                errorAdapter.adapt(face, req.methodName, handler, executionFail, this, args);
+            if (request.errorAdapter != null) {
+                request.errorAdapter.adapt(request.face, request.methodName, handler, exception, this, args);
             }
 
             handler.invoke(resultHandler, arguments(handler, args));
-        } catch (Throwable deliveryFail) {
-            if (fallbackErrorHandler == null) {
-                if (deliveryFail instanceof RuntimeException) {
-                    throw (RuntimeException) deliveryFail; // don't create a new one
-                }
+        } catch (NoSuchElementException e) {
+            // no error handler
+            if (request.fallbackErrorHandler == null) {
+                throw new RuntimeException(e);
+            } else {
+                request.fallbackErrorHandler.onError(request, exception);
+            }
+        } catch (IllegalAccessException e) {
+            throw new AssertionError(e);
+        } catch (InvocationTargetException deliveryFail) {
+            // exception in @OnError
+            if (request.fallbackErrorHandler == null) {
                 throw new RuntimeException(deliveryFail);
             } else {
-                fallbackErrorHandler.onError(req, executionFail);
+                request.fallbackErrorHandler.onErrorDeliveryFail(request, exception, deliveryFail.getTargetException());
+            }
+        } catch (Throwable t) {
+            // thrown by adapter
+            if (request.fallbackErrorHandler == null) {
+                throw new RuntimeException(t);
+            } else {
+                request.fallbackErrorHandler.onErrorDeliveryFail(request, exception, t);
             }
         }
     }

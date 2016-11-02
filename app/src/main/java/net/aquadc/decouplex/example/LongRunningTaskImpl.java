@@ -7,7 +7,7 @@ import java.util.concurrent.TimeUnit;
  * Created by miha on 15.05.16.
  *
  */
-public class LongRunningTaskImpl implements LongRunningTask {
+public final class LongRunningTaskImpl implements LongRunningTask {
 
     @Override
     public BigInteger calculateFactorial(BigInteger n) {

@@ -4,6 +4,7 @@ import android.content.Context;
 import android.os.Bundle;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
+import net.aquadc.decouplex.adapter.ErrorHandler;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
@@ -104,11 +105,5 @@ final class DcxInvocationHandler<FACE, HANDLER> implements InvocationHandler {
                         handler);
 
         return request.prepare(method.getAnnotation(Debounce.class));
-    }
-
-    @SuppressWarnings("Since15")
-    @FunctionalInterface
-    public interface ErrorHandler {
-        void onError(DcxRequest request, Throwable throwable);
     }
 }

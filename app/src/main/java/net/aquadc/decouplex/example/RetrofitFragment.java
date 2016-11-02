@@ -8,6 +8,7 @@ import android.support.design.widget.Snackbar;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.StyleSpan;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -18,6 +19,7 @@ import net.aquadc.decouplex.DecouplexBuilder;
 import net.aquadc.decouplex.DecouplexFragmentCompat;
 import net.aquadc.decouplex.DcxRequest;
 import net.aquadc.decouplex.DecouplexRetrofit;
+import net.aquadc.decouplex.adapter.ErrorHandler;
 import net.aquadc.decouplex.adapter.HttpException;
 import net.aquadc.decouplex.annotation.OnError;
 import net.aquadc.decouplex.annotation.OnResult;
@@ -129,11 +131,23 @@ public final class RetrofitFragment
             // configure Decouplex
             gitHubService = DecouplexRetrofit
                     .retrofit2Builder(GitHubService.class, gitHubRetrofitService, RetrofitFragment.class)
-                    .fallbackErrorHandler((request, error) -> {
-                        // Triggered when there's no appropriate error handling method.
-                        // In this case — when fail() gets called.
-                        Snackbar.make(button0, request + ": " + error, Snackbar.LENGTH_LONG).show();
-                        enableUi(true);
+                    .fallbackErrorHandler(new ErrorHandler() {
+                        @Override
+                        public void onError(DcxRequest failedRequest, Throwable error) {
+                            // Triggered when there's no appropriate error handling method.
+                            // In this case — when fail() gets called.
+                            Snackbar.make(button0, failedRequest + ": " + error, Snackbar.LENGTH_LONG).show();
+                            enableUi(true);
+                        }
+
+                        @Override
+                        public void onErrorDeliveryFail(DcxRequest failedRequest, Throwable serviceFail, Throwable onErrorFail) {
+                            // Triggered when exception thrown inside of @OnError method.
+                            Snackbar.make(button0, failedRequest + ": " + serviceFail, Snackbar.LENGTH_LONG).show();
+                            Log.e("RetrofitFragment", "onErrorDeliveryFail: exception raised:", onErrorFail);
+                            Log.e("RetrofitFragment", "onErrorDeliveryFail: while delivering:", serviceFail);
+                            enableUi(true);
+                        }
                     })
                     .create(getActivity());
 
@@ -166,7 +180,7 @@ public final class RetrofitFragment
 
     // You can write just @OnError.
     // This method intentionally handles only listRepos' error:
-    // fail()'s errors will trigger fallback error handler, not this one.
+    // fail()'s errors will trigger its own error handler, not this one.
     @OnError("listRepos")
     void onError(final DcxRequest failedRequest, Exception e) {
         if (e instanceof HttpException) {
@@ -206,7 +220,6 @@ public final class RetrofitFragment
     // Fail
 
     private void fail() {
-        // will trigger fallback error handler
         gitHubService.fail();
     }
 

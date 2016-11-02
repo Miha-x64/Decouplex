@@ -10,6 +10,7 @@ import android.util.Log;
 import android.util.Pair;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
+import net.aquadc.decouplex.adapter.ErrorHandler;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
 import net.aquadc.decouplex.adapter.ResultProcessor;
@@ -40,7 +41,7 @@ public final class DcxRequest {
     final ResultAdapter resultAdapter;
     private final ErrorProcessor errorProcessor;
     final ErrorAdapter errorAdapter;
-    final DcxInvocationHandler.ErrorHandler fallbackErrorHandler;
+    final ErrorHandler fallbackErrorHandler;
     final Class<?> handler;
 
     DcxRequest(
@@ -50,7 +51,7 @@ public final class DcxRequest {
             DeliveryStrategy deliveryStrategy,
             ResultProcessor resultProcessor, ResultAdapter resultAdapter,
             ErrorProcessor errorProcessor, ErrorAdapter errorAdapter,
-            DcxInvocationHandler.ErrorHandler fallbackErrorHandler,
+            ErrorHandler fallbackErrorHandler,
             Class<?> handler) {
         this.threads = threads;
         this.face = face;

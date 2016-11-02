@@ -21,14 +21,18 @@ Decoupled executor — the easiest &amp; type-safe way to run code in Android se
 - Support DecouplexBatchRequest.retry & document DecouplexBatch;
 - Develop `REMOTE` `DeliveryStrategy` to use implementation that runs in another process;
 - Static factory with default parameter values to use in Kotlin without Builder;
-- Eager validation;
-- Ability to set an uncaught exception handler for `@OnResult` and `@OnError` methods.
+- Eager validation.
 
-#### Currently developing 0.0.3 ####
+#### New in 0.0.3 ####
 - Support nullable `@OnResult` and `@OnError` methods' arguments by means of `@DcxNullable` annotation;
-- Allow some methods to be called without result or error delivery;
+- Allow some methods to be called without result or error delivery by means of `@DcxDelivery` annotation;
+- If an exception has raised in `@OnResult` method, delivering `InvocationTargetException` to `@OnError`;
+- If an exception has raised in `@OnError` method, delivering two exception to fallback handler.
 
-#### What's new in 0.0.2 ####
+Now it's OK for `@OnResult` and `@OnError` methods to declare (`throws`) and throw exceptions — 
+you can catch them all inside your fallback error handler and send them to Crashlytics.
+
+#### Since 0.0.2 ####
 
 - DeliveryStrategy: a way to transfer arguments from UI to Service.
 The only one is available for now — `DeliveryStrategies.LOCAL`.
@@ -42,8 +46,7 @@ but @OnError method requires it).
 #### Since 0.0.1 ####
 
 - Arguments and return values delivery;
-- Wildcard result/error handlers (e. g. @OnResult("list*") works with all methods
-which names start with "list");
+- Wildcard result/error handlers (e. g. @OnResult("list*") works with all methods which names start with "list");
 - `@Debounce(delay)`.
 
 #### Usage ####

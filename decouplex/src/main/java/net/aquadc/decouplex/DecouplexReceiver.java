@@ -70,9 +70,7 @@ public final class DecouplexReceiver extends BroadcastReceiver {
         } else if (actionError.equals(action)) {
             DeliveryStrategy strategy = DeliveryStrategies.forName(resp.getString("deliveryStrategy"));
             DcxResponse res = strategy.obtainResponse(resp.getParcelable("response"));
-            res.dispatchError(res.request.errorAdapter, res.request.face,
-                    res.request.fallbackErrorHandler, res.request.handler,
-                    resultHandler);
+            res.dispatchError(resultHandler);
         }
     }
 

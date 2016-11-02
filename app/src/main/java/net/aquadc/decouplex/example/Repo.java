@@ -12,7 +12,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  *
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class Repo implements Parcelable {
+public final class Repo implements Parcelable {
 
     @JsonProperty("id")
     public int id;

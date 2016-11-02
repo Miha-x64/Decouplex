@@ -4,6 +4,7 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 
 import net.aquadc.decouplex.adapter.ErrorAdapter;
+import net.aquadc.decouplex.adapter.ErrorHandler;
 import net.aquadc.decouplex.adapter.ErrorProcessor;
 import net.aquadc.decouplex.adapter.ResultProcessor;
 import net.aquadc.decouplex.adapter.ResultAdapter;
@@ -28,7 +29,7 @@ public final class DecouplexBuilder<FACE, HANDLER> {
     private ErrorProcessor errorProcessor;
     private ErrorAdapter errorAdapter;
 
-    private DcxInvocationHandler.ErrorHandler fallbackErrorHandler;
+    private ErrorHandler fallbackErrorHandler;
 
     public DecouplexBuilder(@NonNull Class<FACE> face, @NonNull FACE impl, @NonNull Class<HANDLER> handler) {
         // noinspection ConstantConditions
@@ -95,7 +96,7 @@ public final class DecouplexBuilder<FACE, HANDLER> {
         return this;
     }
 
-    public DecouplexBuilder<FACE, HANDLER> fallbackErrorHandler(DcxInvocationHandler.ErrorHandler handler) {
+    public DecouplexBuilder<FACE, HANDLER> fallbackErrorHandler(ErrorHandler handler) {
         // noinspection ConstantConditions
         if (handler == null) {
             throw new NullPointerException("attempt to set null ErrorHandler");
