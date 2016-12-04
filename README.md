@@ -1,5 +1,5 @@
 ### Decouplex ###
-Decoupled executor — the easiest &amp; type-safe way to run code in Android service
+Decoupled executor — the easiest & type-safe way to run code in Android service
 
 #### Include via Gradle ####
 
