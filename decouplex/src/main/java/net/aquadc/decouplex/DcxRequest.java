@@ -3,6 +3,7 @@ package net.aquadc.decouplex;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.annotation.Nullable;
 import android.support.annotation.WorkerThread;
 import android.support.v4.content.LocalBroadcastManager;
@@ -124,14 +125,19 @@ public final class DcxRequest {
 
     static void broadcast(Context con, String action, DcxResponse result) {
         DeliveryStrategy strategy = result.request.deliveryStrategy;
-        Bundle bun = new Bundle();
-        bun.putParcelable("response", strategy.transferResponse(result));
+        Bundle bun = new Bundle(2);
+        Parcelable response = strategy.transferResponse(result);
+        bun.putParcelable("response", response);
         bun.putString("deliveryStrategy", strategy.name());
 
-        broadcast(con, action, bun);
+        if (!broadcast(con, action, bun)) {
+            // remove waiting response and drop it
+            /*delete*/ strategy.obtainResponse(response);
+        }
     }
 
-    static void broadcast(Context con, String action, Bundle extras) {
+    // returns true if succeeds
+    static boolean broadcast(Context con, String action, Bundle extras) {
         Intent i = new Intent(action);
         i.putExtras(extras);
 
@@ -139,16 +145,18 @@ public final class DcxRequest {
         int attempts = 0;
         while (!man.sendBroadcast(i)) {
             try {
-                TimeUnit.MILLISECONDS.sleep(500);
+                TimeUnit.MILLISECONDS.sleep(100);
             } catch (InterruptedException e) {
-                // ok
+                Thread.currentThread().interrupt();
+                return false;
             }
             attempts++;
             if (attempts == 5) {
                 Log.e("Decouplex", "Intent has not been delivered: " + i);
-                break;
+                return false;
             }
         }
+        return true;
     }
 
     /**

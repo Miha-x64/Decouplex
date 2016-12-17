@@ -19,8 +19,8 @@ public class DeliveryStrategies {
     private static final SimpleArrayMap<String, DeliveryStrategy> strategies = new ArrayMap<>(2);
 
     public static final DeliveryStrategy LOCAL = new DeliveryStrategy() {
-        private final SimpleArrayMap<UUID, DcxRequest> requests = new SimpleArrayMap<>(3);
-        private final SimpleArrayMap<UUID, DcxResponse> responses = new SimpleArrayMap<>(3);
+        private final SimpleArrayMap<UUID, DcxRequest> requests = new SimpleArrayMap<>(4); // 4 == BASE_SIZE,
+        private final SimpleArrayMap<UUID, DcxResponse> responses = new SimpleArrayMap<>(4); // we don't need more
 
         @Override
         public String name() {
@@ -30,13 +30,18 @@ public class DeliveryStrategies {
         @Override
         public Parcelable transferRequest(DcxRequest request) {
             UUID uuid = UUID.randomUUID();
-            requests.put(uuid, request);
+            synchronized (requests) {
+                requests.put(uuid, request);
+            }
             return new ParcelUuid(uuid);
         }
 
         @Override
         public DcxRequest obtainRequest(Parcelable data) {
-            DcxRequest request = requests.remove(((ParcelUuid) data).getUuid());
+            DcxRequest request;
+            synchronized (requests) {
+                request = requests.remove(((ParcelUuid) data).getUuid());
+            }
             if (request == null) {
                 throw new NullPointerException("Looks like an internal error.");
             }
@@ -46,13 +51,18 @@ public class DeliveryStrategies {
         @Override
         public Parcelable transferResponse(DcxResponse response) {
             UUID uuid = UUID.randomUUID();
-            responses.put(uuid, response);
+            synchronized (responses) {
+                responses.put(uuid, response);
+            }
             return new ParcelUuid(uuid);
         }
 
         @Override
         public DcxResponse obtainResponse(Parcelable data) {
-            DcxResponse response = responses.remove(((ParcelUuid) data).getUuid());
+            DcxResponse response;
+            synchronized (responses) {
+                response = responses.remove(((ParcelUuid) data).getUuid());
+            }
             if (response == null) {
                 throw new NullPointerException("Looks like an internal error.");
             }

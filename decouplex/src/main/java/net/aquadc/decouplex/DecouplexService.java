@@ -4,6 +4,7 @@ import android.app.IntentService;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
+import android.os.Parcelable;
 import android.support.v4.util.SimpleArrayMap;
 import android.util.Log;
 import android.util.Pair;
@@ -14,6 +15,7 @@ import net.aquadc.decouplex.delivery.DeliveryStrategy;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -118,26 +120,37 @@ public final class DecouplexService extends IntentService {
                     @Override
                     public void run() {
                         try {
-                            Bundle resp = new Bundle();
-                            int j = 0;
+                            List<Parcelable> responses = new ArrayList<>(futures.size());
+                            List<DeliveryStrategy> strategies = new ArrayList<>(futures.size());
+
                             for (Future<Pair<Boolean, DcxResponse>> future : futures) {
                                 Pair<Boolean, DcxResponse> result = future.get();
                                 if (result.second != null) {
                                     if (result.first) {
-                                        String n = Integer.toString(j);
-                                        resp.putParcelable(n,
-                                                result.second.request.deliveryStrategy.transferResponse(result.second));
-                                        resp.putString("strategy" + n, result.second.request.deliveryStrategy.name());
+                                        responses.add(result.second.request.deliveryStrategy.transferResponse(result.second));
+                                        strategies.add(result.second.request.deliveryStrategy);
                                     } else {
                                         Log.e("DecouplexService", "Broadcasting error from batch.");
                                         broadcast(DecouplexService.this, ACTION_ERR + bun.get("receiver"), result.second);
                                         return;
                                     }
                                 }
-                                j++;
                             }
+
+                            Bundle resp = new Bundle(responses.size() + 1);
                             resp.putInt("id", id);
-                            broadcast(DecouplexService.this, ACTION_RESULT_BATCH + bun.get("receiver"), resp);
+                            for (int k = 0, size = responses.size(); k < size; k++) {
+                                String n = Integer.toString(k);
+                                resp.putParcelable(n, responses.get(k));
+                                resp.putString("strategy" + n, strategies.get(k).name());
+                            }
+
+                            if (!broadcast(DecouplexService.this, ACTION_RESULT_BATCH + bun.get("receiver"), resp)) {
+                                // take & drop all responses if not successful
+                                for (int z = 0, size = responses.size(); z < size; z++) {
+                                    /*delete*/ strategies.get(z).obtainResponse(responses.get(z));
+                                }
+                            }
                         } catch (Exception e) {
                             throw new RuntimeException(e);
                         }
