@@ -1,5 +1,5 @@
 ### Decouplex ###
-Decoupled executor — the easiest &amp; type-safe way to run code in Android service
+Decoupled executor — the easiest & type-safe way to run code in Android service
 
 #### Include via Gradle ####
 
@@ -8,13 +8,13 @@ Decoupled executor — the easiest &amp; type-safe way to run code in Android se
 [ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion)
 [ ![Methods count](https://img.shields.io/badge/Methods count-core: 245 | deps: 10358-e91e63.svg) ](http://www.methodscount.com/?lib=net.aquadc.decouplex%3Adecouplex%3A%2B)
 
-`compile 'net.aquadc.decouplex:decouplex:0.0.2'`
+`compile 'net.aquadc.decouplex:decouplex:0.0.3'`
 
 
 ##### DecouplexRetrofit — adapter for Retrofit #####
 [ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion)
 
-`compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.2'`
+`compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.3'`
 
 #### To do in next releases ####
 
