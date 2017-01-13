@@ -14,7 +14,9 @@ Decoupled executor — the easiest & type-safe way to run code in Android servic
 ##### DecouplexRetrofit — adapter for Retrofit #####
 [ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex-Retrofit/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex-Retrofit/_latestVersion)
 
-`compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.3'`
+~~`compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.3'`~~
+
+`compile 'net.aquadc.decouplex:decouplexRetrofit:0.0.3:release@aar'` — this strange thing will be fixed in next release
 
 #### To do in next releases ####
 
