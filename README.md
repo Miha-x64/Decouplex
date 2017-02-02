@@ -20,6 +20,7 @@ Decoupled executor — the easiest & type-safe way to run code in Android servic
 
 #### To do in next releases ####
 
+- Add something like `@OnFinish` with `finally` semantics;
 - Support DecouplexBatchRequest.retry & document DecouplexBatch;
 - Develop `REMOTE` `DeliveryStrategy` to use implementation that runs in another process;
 - Static factory with default parameter values to use in Kotlin without Builder;
