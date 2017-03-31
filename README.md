@@ -1,14 +1,16 @@
 ### Decouplex ###
 Decoupled executor — the easiest & type-safe way to run code in Android service
 
-Looks at this. [Creating a presenter within a Loader](https://medium.com/@czyrux/presenter-surviving-orientation-changes-with-loaders-6da6d86ffbbf) and subscribing it to updates directly seems like a better approach for me.
+#### A better alternative
+
+**Take a look. [Creating a presenter within a Loader](https://medium.com/@czyrux/presenter-surviving-orientation-changes-with-loaders-6da6d86ffbbf) and subscribing it to updates directly seems like a better approach for me.**
 
 #### Include via Gradle ####
 
 ##### Just Decouplex #####
 
 [ ![Download](https://api.bintray.com/packages/miha-x64/maven/Decouplex/images/download.svg) ](https://bintray.com/miha-x64/maven/Decouplex/_latestVersion)
-[ ![Methods count](https://img.shields.io/badge/Methods count-core: 245 | deps: 10358-e91e63.svg) ](http://www.methodscount.com/?lib=net.aquadc.decouplex%3Adecouplex%3A%2B)
+[ ![Methods count](https://img.shields.io/badge/Methods%20count-core:%20245%20|%20deps:%2010358-e91e63.svg) ](http://www.methodscount.com/?lib=net.aquadc.decouplex%3Adecouplex%3A%2B)
 
 `compile 'net.aquadc.decouplex:decouplex:0.0.3'`
 
