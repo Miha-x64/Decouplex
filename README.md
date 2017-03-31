@@ -1,9 +1,9 @@
 ### Decouplex ###
 Decoupled executor — the easiest & type-safe way to run code in Android service
 
-#### A better alternative
+#### An alternative
 
-**Take a look. [Creating a presenter within a Loader](https://medium.com/@czyrux/presenter-surviving-orientation-changes-with-loaders-6da6d86ffbbf) and subscribing it to updates directly seems like a better approach for me.**
+~**Take a look. [Creating a presenter within a Loader](https://medium.com/@czyrux/presenter-surviving-orientation-changes-with-loaders-6da6d86ffbbf) and subscribing it to updates directly seems like a better approach for me.**~ Didn't worked for me: after config change, onLoadFinished gets called **after** onResume, which is too late.
 
 #### Include via Gradle ####
 
