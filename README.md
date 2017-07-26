@@ -4,6 +4,7 @@ Decoupled executor — the easiest & type-safe way to run code in Android servic
 #### An alternative
 
 In many cases you can use presenters which survive lifecycle changes, like in Moxy.
+This library is quite abandoned.
 
 #### Include via Gradle ####
 
@@ -28,7 +29,8 @@ In many cases you can use presenters which survive lifecycle changes, like in Mo
 - Support DecouplexBatchRequest.retry & document DecouplexBatch;
 - Develop `REMOTE` `DeliveryStrategy` to use implementation that runs in another process;
 - Static factory with default parameter values to use in Kotlin without Builder;
-- Eager validation.
+- Eager validation;
+- less ProGuard rules.
 
 #### New in 0.0.3 ####
 - Support nullable `@OnResult` and `@OnError` methods' arguments by means of `@DcxNullable` annotation;
