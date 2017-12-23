@@ -1,10 +1,11 @@
-### Decouplex ###
+### Decouplex (deprecated) ###
 Decoupled executor — the easiest & type-safe way to run code in Android service
 
 #### An alternative
 
 In many cases you can use presenters which survive lifecycle changes, like in Moxy.
-This library is quite abandoned.
+
+**This library is abandoned and deprecated.**
 
 #### Include via Gradle ####
 
