@@ -1,4 +1,6 @@
-### Decouplex (deprecated) ###
+Deprecated: early StackOverflow discussions said you need a Service for network tasks. Actually, you need just a ViewModel/Presenter which outlives a View.
+
+### Decouplex
 Decoupled executor — the easiest & type-safe way to run code in Android service
 
 #### An alternative
